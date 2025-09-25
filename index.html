@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Recipe Library</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <header class="page-header"><h1>Recipe Library</h1></header>
+
+    <!-- toolbars (NOT cards) -->
+    <section class="filter-container">
+      <!-- Filter on kitchen: turquoise chips -->
+      <div class="panel">
+        <h2>Filter on kitchen</h2>
+        <div 
+        class="btns" 
+        id="cuisine">
+            <button 
+            class="btn btn-green" 
+            data-cuisine="mediterranean" 
+            aria-pressed="false">
+            Mediterranean
+          </button>
+            <button 
+            class="btn btn-green" 
+            data-cuisine="middle-eastern" 
+            aria-pressed="false">
+            Middle Eastern
+          </button>
+            <button 
+            class="btn btn-green" 
+            data-cuisine="asian" 
+            aria-pressed="false">
+            Asian
+          </button>
+            <button 
+            class="btn btn-green" 
+            data-cuisine="italian" 
+            aria-pressed="false">
+            Italian
+          </button>
+            <button 
+            class="btn btn-green" 
+            data-cuisine="mexican" 
+            aria-pressed="false">
+            Mexican
+          </button>
+        </div>
+      </div>
+
+      <!-- Sort on time: pink chips -->
+      <div class="panel">
+        <h2>Sort on time</h2>
+        <div 
+        class="btns" 
+        id="sort">
+          <button 
+          class="btn btn-pink" 
+          data-sort="desc" 
+          aria-pressed="false">
+          Descending
+        </button>
+          <button 
+          class="btn btn-pink" 
+          data-sort="asc" 
+          aria-pressed="false">
+          Ascending</button>
+        </div>
+
+        <p id="status" class="status" role="status" aria-live="polite">
+          Pick at least one filter and one sorting option to get a suggestion.
+        </p>
+      </div>
+    </section>
+
+    <!-- Only recipes are cards -->
+    <section class="grid">
+      <article class="card">
+        <img id="recipeImage" class="card__img" alt="Recipe image"
+             src="https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=1200&auto=format&fit=crop" />
+        <h3 id="recipeTitle" class="card__title">Temporary placeholder recipe</h3>
+        <div class="card__meta">
+          <div>Cuisine:</div><span id="recipeCuisine">—</span>
+          <div>Time:</div><span id="recipeTime">—</span>
+        </div>
+        <div class="card__ing">
+          <strong>Ingredients</strong>
+          <ul id="recipeIngredients"><li>—</li></ul>
+        </div>
+      </article>
+    </section>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
+
+
+
+
+
