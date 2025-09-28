@@ -5,15 +5,12 @@
   --stroke: #E9E9E9;
   --radius: 16px;
   --shadow: 0 10px 20px rgba(2, 6, 23, .07);
-
-  /* Colors */
   --blue-dark: #0019A8;
   --pink-dark: #FF5C8A;
   --turquoise: #CCFFE2;
   --pink-light: #FFECEA;
 }
 
-/* ===== Base ===== */
 * {
   box-sizing: border-box;
 }
@@ -32,7 +29,6 @@ body {
 
 .container {
   max-width: 1100px;
-  /* lite tajtare än 1200 för snyggare layout */
   margin: 0 auto;
   padding: 28px;
 }
@@ -50,110 +46,86 @@ body {
   }
 }
 
-/* ===== Filter panels ===== */
+/* ===== Layout for the dropdown panels ===== */
 .filter-container {
   display: grid;
   gap: 24px;
   grid-template-columns: 1fr;
-  /* mobil: allt under varandra */
+  /* mobile: stacked */
 }
 
 @media (min-width:980px) {
   .filter-container {
-    grid-template-columns: 1.3fr .7fr;
-    /* desktop: två spalter */
+    grid-template-columns: repeat(3, 1fr);
+    /* 3 columns on desktop */
     align-items: start;
-    column-gap: 32px;
+    column-gap: 24px;
   }
 }
 
 .panel {
-  padding: 0;
-  border: none;
   background: transparent;
-  box-shadow: none;
 }
 
-.panel h2 {
-  margin: 0 0 12px;
+/* Label above each select */
+.field-label {
+  display: block;
+  margin: 0 0 8px;
   color: var(--ink);
-  font-size: 22px;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+/* Dropdown (select) styling */
+.select {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 999px;
+  /* pill-like */
+  border: 1px solid var(--stroke);
+  background: #fff;
+  color: var(--ink);
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 24px;
+  outline: none;
+  box-shadow: var(--shadow);
+  transition: border-color .15s, box-shadow .15s;
+  appearance: none;
+  /* hide native arrow (we’ll live with default if not supported) */
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--blue-dark) 50%),
+    linear-gradient(135deg, var(--blue-dark) 50%, transparent 50%);
+  background-position:
+    calc(100% - 24px) calc(1em + 2px),
+    calc(100% - 16px) calc(1em + 2px);
+  background-size: 8px 8px, 8px 8px;
+  background-repeat: no-repeat;
+}
+
+.select:focus {
+  border-color: var(--blue-dark);
+}
+
+.select:hover {
+  border-color: var(--blue-dark);
 }
 
 .status {
-  margin-top: 14px;
+  margin-top: 12px;
   font-weight: 700;
   color: #1e3a8a;
 }
 
-/* ===== Chips (buttons) ===== */
-.btns {
-  display: flex;
-  flex-wrap: wrap;
-  /* radbryter snyggt på små skärmar */
-  gap: 16px;
-}
-
-.btn {
-  appearance: none;
-  cursor: pointer;
-  user-select: none;
-  padding: 8px 16px;
-  border-radius: 50px;
-  font-weight: 700;
-  font-size: 16px;
-  line-height: 24px;
-  border: 1px solid transparent;
-  transition: border-color .15s, background .15s, color .15s;
-}
-
-/* Idle */
-.btn-green {
-  background: var(--turquoise);
-  color: var(--blue-dark);
-}
-
-.btn-pink {
-  background: var(--pink-light);
-  color: var(--blue-dark);
-}
-
-/* Hover */
-.btn-green:hover {
-  background: var(--turquoise);
-  color: var(--blue-dark);
-  border: 2px solid var(--blue-dark);
-}
-
-.btn-pink:hover {
-  background: var(--pink-light);
-  color: var(--blue-dark);
-  border: 2px solid var(--blue-dark);
-}
-
-/* Selected */
-.btn-green[aria-pressed="true"] {
-  background: var(--blue-dark);
-  color: #fff;
-  border: none;
-}
-
-.btn-pink[aria-pressed="true"] {
-  background: var(--pink-dark);
-  color: #fff;
-  border: none;
-}
-
-/* ===== Cards (recipes) ===== */
-/* Mobil först: 1 kolumn */
+/* ===== Cards grid ===== */
 .grid {
   display: grid;
   gap: 24px;
   margin-top: 24px;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: 1fr;
+  /* mobile: 1 column */
 }
 
-/* Desktop: 2 kolumner */
 @media (min-width:820px) {
   .grid {
     grid-template-columns: 1fr 1fr;
@@ -163,18 +135,18 @@ body {
 
 .card {
   width: 100%;
-  max-width: 300px;
-  min-height: 571px;
   background: #fff;
   border: 1px solid var(--stroke);
   border-radius: 16px;
   padding: 16px 16px 24px;
   box-shadow: var(--shadow);
   transition: box-shadow .2s;
+  min-height: 571px;
+  /* to match Figma vibe */
 }
 
 .card:hover {
-  border: 2px solid rgba(0, 24, 164, 1);
+  box-shadow: 0 20px 30px rgba(2, 6, 23, .12);
 }
 
 .card__img {
