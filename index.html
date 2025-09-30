@@ -12,75 +12,95 @@
       <h1>Recipe Library</h1>
     </header>
 
-    <!-- ===== Filters & Sorting (as dropdowns) ===== -->
+<!-- ================= FILTERS & SORTING (DROPDOWNS) =================
+         Each <select> is an input. When the user changes any of them,
+         we read the values in JS and then filter/sort/render the cards. -->
     <section class="filter-container">
-      <!-- Cuisine -->
+      <!-- Cuisine filter (single select). Empty value "" means "All". -->
       <div class="panel">
         <label class="field-label" for="cuisine">Filter on kitchen</label>
-        <select id="cuisine" class="select">
-          <option value="">— Choose a cuisine —</option>
+        <select id="cuisine" class="select select--green">
+          <option value="">All cuisines</option>
+          <option value="italian">Italian</option>
+          <option value="american">USA</option>
+          <option value="chinese">China</option>
+          <option value="asian">Asian (generic)</option>
           <option value="mediterranean">Mediterranean</option>
           <option value="middle-eastern">Middle Eastern</option>
-          <option value="asian">Asian</option>
-          <option value="italian">Italian</option>
-          <option value="mexican">Mexican</option>
-          <option value="chinese">Chinese</option>
-          <option value="thai">Thai</option>
-          <option value="indian">Indian</option>
-          <option value="japanese">Japanese</option>
-          <option value="korean">Korean</option>
         </select>
       </div>
 
-      <!-- Cooking time filter -->
+      <!-- Diet filter (single select). Empty "" means "All". -->
       <div class="panel">
-        <label class="field-label" for="timeFilter">Filter on cooking time</label>
-        <select id="timeFilter" class="select">
-          <option value="">— Any time —</option>
-          <option value="under-15">Under 15 min</option>
-          <option value="15-30">15–30 min</option>
-          <option value="30-60">30–60 min</option>
-          <option value="over-60">Over 60 min</option>
+        <label class="field-label" for="diet">Filter on diets</label>
+        <select id="diet" class="select select--green">
+          <option value="">All diets</option>
+          <option value="vegan">Vegan</option>
+          <option value="vegetarian">Vegetarian</option>
+          <option value="gluten-free">Gluten-free</option>
+          <option value="dairy-free">Dairy-free</option>
+          <option value="none">No special diet</option>
         </select>
       </div>
 
-      <!-- Sort -->
+
+      <!-- Sort by time (ascending/descending). Empty "" = no sort. -->
       <div class="panel">
-        <label class="field-label" for="sort">Sort on time</label>
-        <select id="sort" class="select">
-          <option value="">— No sorting —</option>
+        <label class="field-label" for="sortTime">Sort on time</label>
+        <select id="sortTime" class="select select--pink">
+          <option value="">No time sorting</option>
           <option value="asc">Ascending (short → long)</option>
           <option value="desc">Descending (long → short)</option>
         </select>
+      </div>
 
+      <!-- Sort by popularity (most/least). Empty "" = no sort. -->
+      <div class="panel">
+       <label class="field-label" for="sortPop">Sort by popularity</label>
+       <select id="sortPop" class="select select--pink">
+        <option value="">No popularity sorting</option>
+        <option value="most">Most popular</option>
+        <option value="least">Least popular</option>
+       </select>
+        <!-- ARIA live region = screen readers will be notified when text changes. -->
         <p id="status" class="status" role="status" aria-live="polite">
-          Pick at least one filter and one sorting option to get a suggestion.
+          Loading recipes…
         </p>
       </div>
     </section>
 
-    <!-- ===== Card ===== -->
-    <section class="grid">
+    <!-- ================= CARDS GRID =================
+         This section will be *filled by JavaScript* (renderGrid()).
+         We also inject "Loading..." and "Empty" messages here. -->
+    <section id="grid" class="grid"></section>
+
+    <!-- ================= CARD TEMPLATE =================
+         <template> holds markup we clone in JS for each recipe.
+         Using a template avoids writing the same HTML over and over. -->
+    <template id="cardTpl">
       <article class="card">
-        <img
-          id="recipeImage"
-          class="card__img"
-          alt="Recipe image"
-          src="https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=1200&auto=format&fit=crop"
-        />
-        <h3 id="recipeTitle" class="card__title">Temporary placeholder recipe</h3>
+        <!-- The image URL comes from the API (normalized by JS) -->
+        <img class="card__img" alt="">
+        <h3 class="card__title"></h3>
+
+        <!-- Small meta grid showing attributes -->
         <div class="card__meta">
-          <div><strong>Cuisine:</strong></div><span id="recipeCuisine">—</span>
-          <div><strong>Time:</strong></div><span id="recipeTime">—</span>
+          <div><strong>Cuisine:</strong></div><span class="meta-cuisine">—</span>
+          <div><strong>Diet:</strong></div><span class="meta-diet">—</span>
+          <div><strong>Popularity:</strong></div><span class="meta-pop">—</span>
+          <div><strong>Time:</strong></div><span class="meta-time">—</span>
         </div>
+
+        <!-- Ingredient list (we cap it to keep cards compact) -->
         <div class="card__ing">
           <strong>Ingredients</strong>
-          <ul id="recipeIngredients"><li>—</li></ul>
+          <ul class="ing-list"></ul>
         </div>
       </article>
-    </section>
+    </template>
   </div>
 
+  
   <script src="script.js"></script>
 </body>
 </html>

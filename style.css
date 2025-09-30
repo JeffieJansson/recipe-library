@@ -1,23 +1,42 @@
 :root {
+  /* ---------- CSS custom properties (variables) ----------
+     Use these like tokens so you can tweak the design in one place. */
   --bg: #f6f9ff;
   --ink: #0f172a;
   --muted: #475569;
   --stroke: #E9E9E9;
-  --radius: 16px;
   --shadow: 0 10px 20px rgba(2, 6, 23, .07);
   --blue-dark: #0019A8;
   --pink-dark: #FF5C8A;
-  --turquoise: #CCFFE2;
+  --mint: rgba(204, 255, 226, 1);
+  --blue: rgba(0, 24, 164, 1);
   --pink-light: #FFECEA;
+  --pink-dark: #FF5C8A;
+
+  /* Compact card sizing knobs */
+  --card-min: 220px;
+  /* min column width inside the responsive grid */
+  --card-gap: 16px;
+  /* gap between cards */
+  --card-pad: 12px;
+  /* inner padding on a card */
+  --card-radius: 12px;
+  /* card border radius */
+  --card-title: 16px;
+  /* title font size */
+  --card-meta: 14px;
+  /* meta/ingredients font size */
 }
 
+/* Box sizing: include padding and border in width/height calculations */
 * {
-  box-sizing: border-box;
+  box-sizing: border-box
 }
 
+/* Make full-height pages possible */
 html,
 body {
-  height: 100%;
+  height: 100%
 }
 
 body {
@@ -27,12 +46,14 @@ body {
   color: var(--muted);
 }
 
+/* Centers content and limits max width on large screens */
 .container {
   max-width: 1100px;
   margin: 0 auto;
   padding: 28px;
 }
 
+/* Big, bold title. We also scale it down on small screens. */
 .page-header h1 {
   margin: 0 0 16px;
   font-size: 56px;
@@ -42,32 +63,29 @@ body {
 
 @media (max-width:520px) {
   .page-header h1 {
-    font-size: 40px;
+    font-size: 40px
   }
 }
 
-/* ===== Layout for the dropdown panels ===== */
+/* ================= FILTERS LAYOUT =================
+   Mobile-first: one column. On wide screens: 4 columns. */
 .filter-container {
   display: grid;
   gap: 24px;
   grid-template-columns: 1fr;
-  /* mobile: stacked */
 }
 
-@media (min-width:980px) {
+@media (min-width:1000px) {
   .filter-container {
-    grid-template-columns: repeat(3, 1fr);
-    /* 3 columns on desktop */
-    align-items: start;
-    column-gap: 24px;
+    grid-template-columns: repeat(4, minmax(220px, 1fr));
   }
 }
 
 .panel {
-  background: transparent;
+  background: transparent
 }
 
-/* Label above each select */
+/* Labels for dropdowns */
 .field-label {
   display: block;
   margin: 0 0 8px;
@@ -76,116 +94,196 @@ body {
   font-weight: 700;
 }
 
-/* Dropdown (select) styling */
+/* ================= PRETTY DROPDOWNS =================
+   Same class used for all <select> inputs. */
 .select {
   width: 100%;
   padding: 10px 14px;
   border-radius: 999px;
-  /* pill-like */
-  border: 1px solid var(--stroke);
-  background: #fff;
-  color: var(--ink);
-  font-weight: 600;
+  border: 1px solid transparent;
+  font-weight: 700;
   font-size: 16px;
   line-height: 24px;
+  box-shadow: 0 10px 20px rgba(2, 6, 23, .07);
   outline: none;
-  box-shadow: var(--shadow);
-  transition: border-color .15s, box-shadow .15s;
+  cursor: pointer;
+  transition: border-color .15s, background .15s, color .15s;
+
+  /* Remove native arrow + draw a custom chevron using gradients */
   appearance: none;
-  /* hide native arrow (we’ll live with default if not supported) */
-  background-image:
-    linear-gradient(45deg, transparent 50%, var(--blue-dark) 50%),
-    linear-gradient(135deg, var(--blue-dark) 50%, transparent 50%);
+  background-repeat: no-repeat;
+  background-size: 8px 8px, 8px 8px;
   background-position:
     calc(100% - 24px) calc(1em + 2px),
     calc(100% - 16px) calc(1em + 2px);
-  background-size: 8px 8px, 8px 8px;
-  background-repeat: no-repeat;
 }
 
-.select:focus {
-  border-color: var(--blue-dark);
+/* ---------- GREEN SET (cuisine + diet) ---------- */
+.select--green {
+  background-color: var(--mint);
+  color: var(--blue);
+  /* blue arrow in default */
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--blue) 50%),
+    linear-gradient(135deg, var(--blue) 50%, transparent 50%);
 }
 
-.select:hover {
-  border-color: var(--blue-dark);
+.select--green:hover,
+.select--green:focus-visible {
+  background-color: var(--mint);
+  color: var(--blue);
+  border: 2px solid var(--blue);
 }
 
+.select--green.is-selected {
+  background-color: var(--blue);
+  color: #fff;
+  border: none;
+  /* white arrow when selected */
+  background-image:
+    linear-gradient(45deg, transparent 50%, #fff 50%),
+    linear-gradient(135deg, #fff 50%, transparent 50%);
+}
+
+/* ---------- PINK SET (sorters) ---------- */
+.select--pink {
+  background-color: var(--pink-light);
+  color: var(--blue);
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--blue) 50%),
+    linear-gradient(135deg, var(--blue) 50%, transparent 50%);
+}
+
+.select--pink:hover,
+.select--pink:focus-visible {
+  background-color: var(--pink-light);
+  color: var(--blue);
+  border: 2px solid var(--blue);
+}
+
+.select--pink.is-selected {
+  background-color: var(--pink-dark);
+  color: #fff;
+  border: none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, #fff 50%),
+    linear-gradient(135deg, #fff 50%, transparent 50%);
+}
+
+/* Live region where we print status (selected filters, counts, errors) */
 .status {
   margin-top: 12px;
   font-weight: 700;
   color: #1e3a8a;
 }
 
-/* ===== Cards grid ===== */
+/* ================= CARDS GRID =================
+   auto-fill minmax means: make as many columns as fit,
+   each at least --card-min wide, otherwise stretch (1fr). */
 .grid {
   display: grid;
-  gap: 24px;
+  gap: var(--card-gap);
   margin-top: 24px;
-  grid-template-columns: 1fr;
-  /* mobile: 1 column */
+  grid-template-columns: repeat(auto-fill, minmax(var(--card-min), 1fr));
+  align-items: start;
+  /* align tops of different-height cards */
 }
 
-@media (min-width:820px) {
-  .grid {
-    grid-template-columns: 1fr 1fr;
-    align-items: start;
-  }
-}
-
+/* ================= CARD =================
+   A compact white card with shadow. */
 .card {
   width: 100%;
   background: #fff;
   border: 1px solid var(--stroke);
-  border-radius: 16px;
-  padding: 16px 16px 24px;
+  border-radius: var(--card-radius);
+  padding: var(--card-pad) var(--card-pad) calc(var(--card-pad)*1.5);
   box-shadow: var(--shadow);
   transition: box-shadow .2s;
-  min-height: 571px;
-  /* to match Figma vibe */
+  min-height: auto;
+  /* don't force a minimum height */
 }
 
 .card:hover {
   box-shadow: 0 20px 30px rgba(2, 6, 23, .12);
 }
 
+/* Image with 16:9 ratio to keep cards shorter (compact look) */
 .card__img {
   width: 100%;
-  aspect-ratio: 4/3;
+  aspect-ratio: 16/9;
   object-fit: cover;
-  border-radius: 12px;
+  border-radius: calc(var(--card-radius) - 4px);
 }
 
+/* Card title */
 .card__title {
-  margin: 10px 0 0;
+  margin: 8px 0 0;
   color: #0f172a;
-  font-size: 18px;
+  font-size: var(--card-title);
   font-weight: 800;
 }
 
+/* Key/Value meta rows (two-column grid) */
 .card__meta {
   display: grid;
   grid-template-columns: auto 1fr;
   gap: 6px 10px;
-  padding-top: 10px;
+  padding-top: 8px;
   border-top: 1px solid var(--stroke);
   color: #0f172a;
   font-weight: 700;
-  margin-top: 10px;
+  margin-top: 6px;
+  font-size: var(--card-meta);
 }
 
 .card__meta span {
   color: #475569;
-  font-weight: 600;
+  font-weight: 600
 }
 
+/* Ingredients section */
 .card__ing {
-  padding-top: 10px;
+  padding-top: 8px;
   border-top: 1px solid var(--stroke);
-  margin-top: 10px;
+  margin-top: 8px;
+  font-size: var(--card-meta);
 }
 
 .card__ing ul {
-  margin: 8px 0 0 18px;
+  margin: 6px 0 0 18px;
+  /* indent bullets a bit */
   padding: 0;
+}
+
+/* States for loading/empty messages (full-width in grid) */
+.empty,
+.loading {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 24px;
+  background: #fff;
+  border: 1px dashed var(--stroke);
+  border-radius: 12px;
+}
+
+.loading {
+  border-style: solid;
+}
+
+/* ================= RESPONSIVE TWEAKS ================= */
+@media (min-width:1280px) {
+  :root {
+    --card-min: 240px;
+  }
+
+  /* allow more columns on very wide screens */
+}
+
+@media (max-width:520px) {
+  :root {
+    --card-min: 180px;
+    /* narrower columns on small phones */
+    --card-title: 15px;
+    --card-meta: 13px;
+  }
 }
