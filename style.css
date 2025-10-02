@@ -1,6 +1,6 @@
 :root {
-  /* ---------- CSS custom properties (variables) ----------
-     Use these like tokens so you can tweak the design in one place. */
+  /* ---------- CSS custom properties (variables) ---------- */
+  /* Use these like tokens so you can tweak the design in one place. */
   --bg: #f6f9ff;
   --ink: #0f172a;
   --muted: #475569;
@@ -11,7 +11,6 @@
   --mint: rgba(204, 255, 226, 1);
   --blue: rgba(0, 24, 164, 1);
   --pink-light: #FFECEA;
-  --pink-dark: #FF5C8A;
 
   /* Compact card sizing knobs */
   --card-min: 220px;
@@ -29,14 +28,15 @@
 }
 
 /* Box sizing: include padding and border in width/height calculations */
+
 * {
-  box-sizing: border-box
+  box-sizing: border-box;
 }
 
 /* Make full-height pages possible */
 html,
 body {
-  height: 100%
+  height: 100%;
 }
 
 body {
@@ -82,7 +82,7 @@ body {
 }
 
 .panel {
-  background: transparent
+  background: transparent;
 }
 
 /* Labels for dropdowns */
@@ -238,8 +238,9 @@ body {
 
 .card__meta span {
   color: #475569;
-  font-weight: 600
+  font-weight: 600;
 }
+
 
 /* Ingredients section */
 .card__ing {

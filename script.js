@@ -22,6 +22,7 @@ const API_URL = (n = 12) =>
 //    TTL (time to live) is how long the cache is valid (here: 6 hours).
 const CACHE_KEY = 'spoon_recipes_cache_v1';
 const CACHE_TTL_MS = 1000 * 60 * 60 * 6; // 6 hours
+const MAX_INGREDIENTS = 4;     // Limit ingredient list length to keep cards compact
 
 // 3) Short helper to grab elements by id.
 //    This is a FUNCTION. It has local scope for "id" parameter and returns a DOM node.
@@ -82,7 +83,7 @@ function prettyLabel(code) {
   // If code is falsy (""), return empty string. || is a LOGICAL OR.
   if (!code) return '';
   // String replace + regex: kebab-case to Title Case
-  return code.replace('-', ' ').replace(/\b\w/g, c => c.toUpperCase());
+  return code.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 }
 function starsFromPopularity(p) {
   // Convert 0–100 popularity into 0–5 stars (OBJECT → STRING)
@@ -243,7 +244,6 @@ function getVisibleRecipes() {
    =========================================================== */
 
 let RECIPES = [];      // GLOBAL array, filled by cache or API
-const MAX_ING = 4;     // Limit ingredient list length to keep cards compact
 
 function renderGrid(sourceLabel = 'cache/api') {
   // Clear grid before re-render (DOM write)
@@ -279,9 +279,9 @@ function renderGrid(sourceLabel = 'cache/api') {
 
     // Build the ingredient list (ARRAY → multiple <li>)
     const ul = node.querySelector('.ing-list');
-    // If the list is longer than MAX_ING, slice + add ellipsis
-    const list = r.ingredients.length > MAX_ING
-      ? [...r.ingredients.slice(0, MAX_ING), '…']  // SPREAD creates a new ARRAY
+    // If the list is longer than MAX_INGREDIENTS, slice + add ellipsis
+    const list = r.ingredients.length > MAX_INGREDIENTS
+      ? [...r.ingredients.slice(0, MAX_INGREDIENTS), '…']  // SPREAD creates a new ARRAY
       : r.ingredients;
 
     list.forEach(i => {
@@ -319,19 +319,16 @@ function updateStatus(count, source) {
    Purpose: Wire up the dropdowns, then kick off the first render.
    =========================================================== */
 
-// When any dropdown changes, re-render the grid.
-// We pass 'cache/api' as sourceLabel to indicate where data came from.
+// Combine event listeners and visual state setup for dropdowns
 ['cuisine', 'diet', 'sortTime', 'sortPop'].forEach(id => {
-  $(id).addEventListener('change', () => renderGrid('cache/api'));
-});
-
-// Give <select> a "selected" visual state when a non-empty value is chosen
-['cuisine', 'diet', 'sortTime', 'sortPop'].forEach(id => {
-  const sel = document.getElementById(id);
+  const sel = $(id);
   if (!sel) return;
 
-  const sync = () => sel.classList.toggle('is-selected', !!sel.value);
+  // Re-render grid on change
+  sel.addEventListener('change', () => renderGrid('cache/api'));
 
+  // Sync visual state
+  const sync = () => sel.classList.toggle('is-selected', !!sel.value);
   sel.addEventListener('change', sync);
   sel.addEventListener('blur', sync);
   sel.addEventListener('input', sync);
@@ -341,4 +338,4 @@ function updateStatus(count, source) {
 // Entry point: fetch (from cache or API), then render
 // DEMONSTRATES: calling an async FUNCTION (fetchRecipes), which itself
 // uses PROMISES under the hood (await fetch, await res.json).
-fetchRecipes(16);
+fetchRecipes(12);
