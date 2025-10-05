@@ -12,8 +12,9 @@
 - Your code should be split up into different functions that are named after what they do
 - The user should be able to click a button that selects a random recipe, and your page should display the selected item
 - Your page should have an empty state, e.g. if there are no recipes matching the filter - show a meaningful message to the user
-- Your page should show a useful message to the user in case the daily API quota has been reached
+- Your page should show a useful message to the user in case the daily API quota has been reached(only 150 requests per day)
 - Your page should be responsive and look good on devices from 320px width up to at least 1600px
+- Deal with missing or inconsistent data (e.g., how dietary properties are structured).
 
 **Course Participation Requirements**
 - Active participation in mob/pair programming workshops
@@ -48,27 +49,7 @@ Users can filter and sort recipes, search by name or ingredients, and display a 
 
 The project fulfills all **G** (Pass) requirements and several **VG** (Pass with Distinction) stretch goals.
 
-## ✅ Features
 
-### 🎯 Grade G (Pass)
-- Fetches real recipe data from the `recipes/random` endpoint.
-- Dynamically displays recipe cards when the page loads.
-- Allows users to:
-  - Filter by **cuisine** and **diet**.
-  - Sort by **time** and **popularity**.
-  - View a **random recipe**.
-- Displays meaningful messages for:
-  - **Empty results** (no recipes match filters).
-  - **Daily API quota limit reached**.
-- Fully **responsive design** (works from 320px → 1600px+).
-- Code is split into **well-named functions** for clarity and maintainability.
-
-### 🌟 Grade VG (Pass with Distinction)
-- Filters and sorting options work **together**.
-- Implements **local storage caching** to reduce API requests.
-- Shows a **loading state** while fetching data.
-- Includes a **search bar** for titles and ingredients.
-- Accessibility improved with **ARIA live updates** and `aria-busy` while loading.
 
 ## ⚙️ How It Works
 
@@ -121,33 +102,7 @@ An **empty state** appears if no recipes match the selected filters.
 └── style.css       # All styling (responsive grid, dropdowns, cards)
 ```
 
-## 🖥️ How to Run
-1. **Get a Spoonacular API key**  
-   Sign up at https://spoonacular.com/food-api
 
-2. **Insert your key** in `script.js`:
-```js
-const API_KEY = 'YOUR_KEY_HERE';
-```
-
-3. **Open `index.html`** in your browser.  
-   The app will automatically fetch recipes and display them.
-
-## 🧠 Technologies Used
-- **HTML5** — Semantic structure with `<template>` and ARIA attributes.
-- **CSS3 (Grid + Variables)** — Responsive layout and clean design.
-- **JavaScript (ES6+)** — Fetch API, async/await, Promises, localStorage, DOM manipulation.
-
-## 🏅 Accessibility & Performance
-- Uses `aria-live` regions to announce status updates to screen readers.
-- `aria-busy` marks the grid while data is loading.
-- Cached data minimizes API calls and improves speed.
-
-## 🚀 Future Improvements (Ideas)
-- Add pagination or infinite scrolling.
-- Enable users to save favorite recipes.
-- Display full cooking instructions when clicking a recipe.
-- Add dark/light mode toggle.
 
 ## 👩‍💻 Author
 **Jennifer Jansson**  
