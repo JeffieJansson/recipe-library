@@ -1,3 +1,10 @@
+/* ===============================================================
+   G-REQ: RESPONSIVE DESIGN
+   The layout adapts to any screen width (320px–1600px+) using
+   CSS Grid, flexible minmax() columns, and media queries below.
+   =============================================================== */
+
+
 :root {
   /* ---------- CSS custom properties (variables) ---------- */
   /* Use these like tokens so you can tweak the design in one place. */
@@ -68,7 +75,8 @@ body {
 }
 
 /* ================= FILTERS LAYOUT =================
-   Mobile-first: one column. On wide screens: 4 columns. */
+   G-REQ: Responsive grid layout for filter panel
+   Adjusts from single column (mobile) to four columns (desktop). */
 .filter-container {
   display: grid;
   gap: 24px;
@@ -178,8 +186,8 @@ body {
 }
 
 /* ================= CARDS GRID =================
-   auto-fill minmax means: make as many columns as fit,
-   each at least --card-min wide, otherwise stretch (1fr). */
+   G-REQ: Responsive card grid using auto-fill & minmax
+   Cards rearrange automatically based on viewport width. */
 .grid {
   display: grid;
   gap: var(--card-gap);
@@ -256,7 +264,9 @@ body {
   padding: 0;
 }
 
-/* States for loading/empty messages (full-width in grid) */
+/* /* G-REQ: EMPTY + LOADING STATES
+   Visually styled messages displayed when fetching data or
+   when no recipes match filters. */
 .empty,
 .loading {
   grid-column: 1 / -1;
@@ -271,15 +281,40 @@ body {
   border-style: solid;
 }
 
+.btn {
+  display: inline-block;
+  padding: 10px 16px;
+  border-radius: 999px;
+  border: 2px solid var(--blue);
+  background: #fff;
+  color: var(--blue);
+  font-weight: 800;
+  font-size: 16px;
+  cursor: pointer;
+  box-shadow: var(--shadow);
+  transition: background .15s, color .15s, transform .05s;
+}
+
+.btn:hover,
+.btn:focus-visible {
+  background: var(--blue);
+  color: #fff;
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
+
 /* ================= RESPONSIVE TWEAKS ================= */
+/* VG-STRETCH: Additional responsiveness for ultra-wide screens (desktop+) */
+
 @media (min-width:1280px) {
   :root {
     --card-min: 240px;
   }
-
-  /* allow more columns on very wide screens */
 }
 
+/* G-REQ: Responsive typography and smaller card sizes for mobile (≤520px) */
 @media (max-width:520px) {
   :root {
     --card-min: 180px;

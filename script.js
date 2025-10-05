@@ -1,356 +1,470 @@
 /* ===========================================================
-   SPOONACULAR + APP BOOTSTRAP
-   Concepts shown here:
-   - Constants, template literals, functions
-   - Promises & async/await (API calls)
-   - localStorage caching (JSON stringify/parse)
-   - DOM updates (rendering a template)
-   - Conditionals, logical operators, arrays, loops, objects
-   - Clearer render source labels ("api" | "cache" | "cache (stale)" | "filters")
-   - Stale-cache fallback when fetch fails (keeps UI useful offline/quota)
-   - Ingredient list cleaned with .filter(Boolean) to avoid blank bullets
+// ===============================================================
+//  Code is split up into small, named functions that describe what they do. 
+// Each section is clearly marked with a header.
+// -1 API config & fetch
+// -2 Cache handling
+// -3 DOM helpers
+// -4 String helpers
+// -5 Normalization helpers
+// -6 Cache functions
+// -7 Fetch with quota handling
+// -8 Filtering & sorting
+// -9 Rendering
+// -10 Event handling & init  random recipe
    =========================================================== */
 
 
 /* -----------------------
    1) API CONFIG
    ----------------------- */
-// CONST (STRING): API key used to authenticate against Spoonacular (OK for school projects, unsafe in production)
+// CONST (STRING) – API key for Spoonacular. OK to expose for demos/school, NOT for production.
+// In production, you would keep keys on a server and call your server instead of calling the API directly.
+// FUNCTION (arrow) + TEMPLATE LITERAL – Builds the full URL to fetch N random recipes.
+// We use a default parameter (n = 12) so the function works even if we don’t pass a value.
 const API_KEY = '42a3e506a5a6493080872a8509f9c7d5';
-
-// FUNCTION (arrow) + TEMPLATE LITERAL: builds full API URL from a count parameter (default 12)
 const API_URL = (n = 12) =>
   `https://api.spoonacular.com/recipes/random?number=${n}&apiKey=${API_KEY}`;
+
 
 /* -----------------------
    2) CACHE + UI CONSTANTS
    ----------------------- */
-// CONST (STRING)  store fetched recipes to avoid hitting the 150/day quota.
-// CONST( NUMBER)  TTL (time to live) is how long the cache is valid (here: 6 hours).
-// CONST (NUMBER): UI rule to cap ingredient bullets per card
+// These constants + global array are "shared settings/memory":
+// - CACHE_KEY → name used to save/load recipes in localStorage
+// - CACHE_TTL_MS → how long cached data is valid (6h here). After this time we consider the cache “expired” and try to refetch fresh data.
+// - MAX_INGREDIENTS → UI rule: keep recipe cards short
+// - RECIPES → global array holding all recipes (so filter/sort/render can access same data)
 const CACHE_KEY = 'spoon_recipes_cache_v1';
 const CACHE_TTL_MS = 1000 * 60 * 60 * 6; // 6 hours
-const MAX_INGREDIENTS = 4;     // Limit ingredient list length to keep cards compact
+const MAX_INGREDIENTS = 4;
+let RECIPES = [];
+
 
 /* -----------------------
    3) DOM HELPERS
    ----------------------- */
-// FUNCTION: tiny helper to get an element by id
-// GLOBAL DOM HANDLE: the grid container where cards will be injected
+// $() → shortcut for document.getElementById()
+// grid → reference to <div id="grid"> where recipe cards go
 const $ = (id) => document.getElementById(id);
 const grid = $('grid');
 
 
-/* -- NORMALIZATION HELPERS,
-Purpose: The API returns big, messy OBJECTS. We "normalize"
-them into the shape our UI expects --*/
+/* -----------------------
+   4) STRING HELPERS (REUSABLE)
+   ----------------------- 
+   Purpose: Avoid duplicating string transforms in multiple places.
+   - toKebabCase: "Middle Eastern" → "middle-eastern" (stable codes for filters)
+   - toTitleCase: "middle-eastern" → "Middle Eastern" (friendly UI labels)
+   */
+function toKebabCase(str = '') {
+  return String(str).trim().toLowerCase().replace(/\s+/g, '-');
+}
+// Converts "middle-eastern" → "Middle Eastern" (Title Case: good for UI labels).
+function toTitleCase(str = '') {
+  return String(str).replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+}
 
-// FUNCTION normalizeRecipe takes one API recipe OBJECT `r`
-// and RETURNS a new OBJECT in our preferred format.
+
+/* -----------------------
+   5) NORMALIZATION HELPERS
+   -----------------------
+   PURPOSE: The API returns big, messy objects with many fields and inconsistent shapes.
+   We normalize each raw recipe into a clean object with consistent keys that our UI expects.
+   This decouples the UI from the raw API shape and makes rendering simpler/reliable.
+
+- G-REQ: Data normalization — converts messy API objects into consistent structures that our UI can rely on.
+- VG-STRETCH: Simplifies filtering and sorting logic downstream.
+
+*/
 function normalizeRecipe(r) {
-  // CONDITIONAL + OPTIONAL CHAINING:
-  // r.cuisines might be undefined or empty. We safely read first item or fall back to 'unknown'.
-  const cuisineCode = (r.cuisines?.[0] || 'unknown')
-    .toLowerCase()
-    .replace(/\s+/g, '-'); // "Middle Eastern" -> "middle-eastern"
+  // DEBUG: See what title we’re normalizing (helps if some recipe breaks).
+  console.log('[normalizeRecipe] input:', r?.title);
 
-  // CONDITIONAL CHAIN  pick one diet (vegan > vegetarian > gluten-free > dairy-free > none)
+  // Read first cuisine safely (optional chaining) or default to 'unknown'.
+  // Then convert to kebab-case so filters are simple and consistent.
+  const cuisineCode = toKebabCase(r?.cuisines?.[0] || 'unknown');
+
+  // Choose exactly one diet label based on priority (vegan > vegetarian > gluten-free > dairy-free > none).
+  // This makes sorting/filtering simpler (single diet per recipe).
   let dietCode = 'none';
-  if (r.vegan || r.diets?.includes?.('vegan')) dietCode = 'vegan';
-  else if (r.vegetarian || r.diets?.includes?.('vegetarian')) dietCode = 'vegetarian';
-  else if (r.glutenFree || r.diets?.includes?.('gluten free')) dietCode = 'gluten-free';
-  else if (r.dairyFree || r.diets?.includes?.('dairy free')) dietCode = 'dairy-free';
+  if (r?.vegan || r?.diets?.includes?.('vegan')) dietCode = 'vegan';
+  else if (r?.vegetarian || r?.diets?.includes?.('vegetarian')) dietCode = 'vegetarian';
+  else if (r?.glutenFree || r?.diets?.includes?.('gluten free')) dietCode = 'gluten-free';
+  else if (r?.dairyFree || r?.diets?.includes?.('dairy free')) dietCode = 'dairy-free';
 
-  // POPULARITY: prefer spoonacularScore (0–100). Else use aggregateLikes, capped to 100.
-  // LOGICAL OPERATORS + TYPE CHECK.
-  const rawPop = typeof r.spoonacularScore === 'number'
+  // Popularity: prefer spoonacularScore (0–100). Else fallback to aggregateLikes (capped 0–100).
+  // typeof guard is used because some APIs may set undefined/null or a string by mistake.
+  const rawPop = typeof r?.spoonacularScore === 'number'
     ? r.spoonacularScore
-    : Math.min(100, r.aggregateLikes || 0);
+    : Math.min(100, r?.aggregateLikes || 0);
 
-  // RETURN a new OBJECT: this is what we will render.
+  // Return the normalized object. This is the shape our UI code relies on.
   return {
-    id: r.id,                                                           // number/string
-    title: r.title || 'Untitled recipe',                                // string
-    cuisine: cuisineCode,                                               // 'italian', 'middle-eastern', ...
-    diet: dietCode,                                                     // 'vegan', 'vegetarian', 'none', ...
-    timeMin: r.readyInMinutes || 0,                                     // number
-    popularity: rawPop,                                                 // number (0–100)
-    imageUrl: r.image || 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=1200&auto=format&fit=crop',
-    // ARRAY.map → take ingredient names
-    // .filter(Boolean) → drop empty/undefined names to avoid blank <li>
-    // .slice(0, 12) → safety cap
-    ingredients: (r.extendedIngredients || [])
+    id: r?.id,
+    title: r?.title || 'Untitled recipe',
+    cuisine: cuisineCode,                     // e.g., 'italian', 'middle-eastern'
+    diet: dietCode,                           // 'vegan', 'vegetarian', 'gluten-free', 'dairy-free', 'none'
+    timeMin: r?.readyInMinutes || 0,          // number (0 if missing)
+    popularity: rawPop,                        // number (0–100)
+    imageUrl: r?.image
+      || 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=1200&auto=format&fit=crop',
+
+    // Build a simple array of ingredient names:
+    // 1) (r.extendedIngredients || [])  → safe fallback to empty array
+    // 2) .map(i => i?.name)              → pick only the name field (undefined-safe)
+    // 3) .filter(Boolean)                → remove empty/undefined names to avoid blank bullets
+    // 4) .slice(0, 12)                   → cap to 12 names max (safety)
+    ingredients: (r?.extendedIngredients || [])
       .map(i => i?.name)
       .filter(Boolean)
       .slice(0, 12),
   };
 }
 
-
-// PURE FORMATTERS: convert raw numbers/codes → friendly labels
-// CONDITIONAL CHAIN: returns a label based on minute ranges
+// PURE FORMATTERS – Small helpers to transform numbers/codes to user-friendly labels.
 function minutesToLabel(mins) {
+  // Return a time label based on numeric ranges
   if (mins < 15) return "Under 15 min";
   if (mins <= 30) return "15–30 min";
   if (mins <= 60) return "30–60 min";
   return "Over 60 min";
 }
-function prettyLabel(code) {
-  // If code is falsy (""), return empty string. || is a LOGICAL OR.
-  if (!code) return '';
-  // STRING replace: kebab → spaced; REGEX capitalize first letter of each word
-  return code.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-}
 function starsFromPopularity(p) {
-  // Convert 0–100 popularity into 0–5 stars (OBJECT → STRING)
+  // Convert 0–100 popularity to a 0–5 stars string
   const n = Math.max(0, Math.min(5, Math.round(p / 20)));
-  const full = "★".repeat(n);
-  const empty = "☆".repeat(5 - n);
-  return full + empty;
+  return "★".repeat(n) + "☆".repeat(5 - n);
 }
 
 
 /* ===========================================================
-   4) CACHE 
-   Purpose: Reduce API usage & quota errors by reusing data.
-   Uses localStorage (key/value STRING store) + JSON parse/stringify.
-   ========================================================= */
+   6) CACHE FUNCTIONS (localStorage)
+   PURPOSE: Reduce API calls (quota), speed up UI, work better with flaky networks.
+   We save normalized recipes + timestamp, then read them if still within TTL.
+   =========================================================== */
 
+// Read FRESH cache (honors TTL). Returns an array or null.
 function loadCache() {
   try {
-    // Read a JSON string (or null) from localStorage.
-    const raw = localStorage.getItem(CACHE_KEY);
-    if (!raw) return null;         // CONDITIONAL: nothing cached
-    const obj = JSON.parse(raw);   // Convert STRING → OBJECT
-
-    // Validate shape and TTL (time to live)
+    const raw = localStorage.getItem(CACHE_KEY);         // may be null
+    if (!raw) return null;
+    const obj = JSON.parse(raw);                         // parse string → object
     if (!obj || !obj.ts || !Array.isArray(obj.data)) return null;
     if (Date.now() - obj.ts > CACHE_TTL_MS) return null; // expired
-
-    return obj.data;               // ARRAY of normalized recipes
+    console.log('[cache] Loaded fresh cache:', obj.data.length);
+    return obj.data;
   } catch {
-    return null;                  // safe fallback if parsing fails
+    // If JSON is corrupted or storage blocked, fail safely.
+    return null;
   }
 }
 
+// Save normalized recipes into cache along with current timestamp.
 function saveCache(recipes) {
   try {
-    // FUNCTION: Save normalized recipes into cache (with timestamp).
     localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data: recipes }));
+    console.log('[cache] Saved recipes:', recipes.length);
   } catch {
-    // Could fail due to browser quota; but can safely ignore for this project
+    // If storage is full/blocked, fail safely (but warn in console).
+    console.warn('[cache] Save failed (quota or blocked).');
   }
 }
-/* ===========================================================
-   5) FETCH
-   Purpose: Get data from the API (PROMISE) using async/await.
-   Also demonstrates try/catch error handling.
-   =========================================================== */
 
+
+/* ===========================================================
+   7) FETCH (API + fallback) with QUOTA messaging
+   PURPOSE: Show loading → try cache → try network → normalize/save/render → handle errors.
+   Includes a stale-cache fallback to keep UI useful when offline/quota.
+
+- G-REQ: QUOTA HANDLING — detect when daily API limit (402/429) is reached and show a useful message to the user instead of breaking silently.
+- VG-STRETCH: Uses cached or stale data when quota/network fails.
+
+   =========================================================== */
 async function fetchRecipes(count = 12) {
-  // Show a loading state in the grid and status (DOM manipulation)
   grid.innerHTML = '<div class="loading">Loading recipes…</div>';
   $('status').textContent = 'Loading recipes…';
+  grid.setAttribute('aria-busy', 'true');
 
-  // 1) Try cache first to avoid extra API calls
+  // 1) Try fresh cache first
   const cached = loadCache();
   if (cached) {
-    // GLOBAL variable RECIPES gets assigned (GLOBAL SCOPE).
     RECIPES = cached;
-    renderGrid('cache'); // FUNCTION call to draw the cards
-    return;              // Early return (we’re done)
+    renderGrid('cache');
+    return;
   }
 
-  // 2) No cache → fetch from API
+  // 2) Else fetch from API
+  /*QUOTA HANDLING — detect when daily API limit (402/429) is reached
+    and show a useful message to the user instead of breaking silently.*/
   try {
-    // fetch() returns a PROMISE. We "await" it (async/await).
     const res = await fetch(API_URL(count));
 
-    // Check HTTP status. If not OK (200–299), throw to catch().
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    if (!res.ok) {
+      if (res.status === 402 || res.status === 429) {
+        $('status').textContent = 'Daily API quota reached — showing cached recipes if available.';
+        throw new Error('QUOTA');
+      }
+      throw new Error(`HTTP ${res.status}`);
+    }
 
-    // Parse JSON body (also returns a PROMISE)
     const data = await res.json();
-
-    // ARRAY MAP: transform API recipes into our normalized objects
     const normalized = (data.recipes || []).map(normalizeRecipe);
-
-    // If API returns nothing (can happen), throw an error to fall into catch
     if (normalized.length === 0) throw new Error('Empty result');
 
-    // Save globally and cache to localStorage
     RECIPES = normalized;
     saveCache(RECIPES);
-
-    // Draw the UI
     renderGrid('api');
   } catch (err) {
-    // 3) Any network error / quota error / parse error ends up here
-    console.warn('Fetch failed or quota reached:', err);
+    console.warn('[fetchRecipes] failed:', err);
+    const isQuota = err && err.message === 'QUOTA';
 
-    // Show a helpful empty state
+    // 3a) In-memory stale
+    if (RECIPES && RECIPES.length) {
+      // G-REQ: fallback message for quota or offline situations
+      $('status').textContent = isQuota
+        ? 'Daily API quota reached — showing previously loaded recipes.'
+        : 'Network error — showing previously loaded recipes.';
+      renderGrid('cache (stale)');
+      return;
+    }
+
+    // 3b) Stale cache (ignore TTL)
+    const stale = (() => {
+      try {
+        const raw = localStorage.getItem(CACHE_KEY);
+        if (!raw) return null;
+        const obj = JSON.parse(raw);
+        if (!obj || !Array.isArray(obj.data)) return null;
+        return obj.data;
+      } catch { return null; }
+    })();
+
+    if (stale && stale.length) {
+      RECIPES = stale;
+      $('status').textContent = isQuota
+        ? 'Daily API quota reached — showing cached recipes (stale).'
+        : 'Offline/quota — showing cached recipes (stale).';
+      renderGrid('cache (stale)');
+      return;
+    }
+
+    // 3c) Empty state
     RECIPES = [];
     grid.innerHTML = '<div class="empty">Couldn’t fetch recipes (quota reached or offline). Try again later.</div>';
-    $('status').textContent = 'API unavailable — showing no results.';
+    $('status').textContent = isQuota
+      ? 'Daily API quota reached — showing no results.'
+      : 'API unavailable — showing no results.';
+    grid.removeAttribute('aria-busy');
   }
 }
 
 /* ===========================================================
-   6) FILTERING + SORTING
-   Purpose: Take the full set of RECIPES and produce a new ARRAY
-   that matches the current dropdown values.
+   8) FILTERING + SORTING
+   PURPOSE: Take the full set of RECIPES and produce a new array
+   that matches the current dropdown values (cuisine/diet + sorting).
+   Non-mutating patterns are used (returns new arrays).
    =========================================================== */
 
-// Getters for current UI selections (empty string = “no filter/sort”
+// Get current UI selections from the dropdowns. Empty string "" means “no filter/sort”.
 function getSelectedCuisine() { return $('cuisine').value || ""; }
 function getSelectedDiet() { return $('diet').value || ""; }
 function getSelectedSortTime() { return $('sortTime').value || ""; } // "asc" | "desc" | ""
-function getSelectedSortPop() { return $('sortPop').value || ""; }  // "most" | "least" | ""
+function getSelectedSortPop() { return $('sortPop').value || ""; }   // "most" | "least" | ""
+function getQuery() { return ($('q')?.value || '').trim().toLowerCase(); }
 
-//  FUNCTION: filter recipes by selected cuisine/diet (does NOT mutate original).
+// G-REQ: FILTERING — applies current dropdown selections (cuisine, diet)
+// VG-STRETCH: Also supports free-text search in title and ingredients.
+
 function filterRecipes(list) {
   const cuisine = getSelectedCuisine();
   const diet = getSelectedDiet();
+  const q = getQuery();
 
-  // ARRAY filter() loops through and keeps items that return true.
-  return list.filter(r => {
-    // LOGICAL: if a filter is empty "", we accept everything (true).
-    // TERNARY: condition ? valueIfTrue : valueIfFalse
+  const out = list.filter(r => {
+    // If a filter is empty "", we accept everything (true).
     const passCuisine = cuisine ? r.cuisine === cuisine : true;
     const passDiet = diet ? r.diet === diet : true;
-    return passCuisine && passDiet; // BOTH must be true (&&)
+    const passQuery = q
+      ? (r.title.toLowerCase().includes(q) ||
+        r.ingredients.some(i => i.toLowerCase().includes(q)))
+      : true;
+    return passCuisine && passDiet && passQuery;
   });
+
+  return out;
 }
 
-// FUNCTION: sort recipes by popularity/time (non-mutating pattern).
+// G-REQ: SORTING — sorts recipes by time or popularity based on dropdowns
+// VG-STRETCH: Sorting and filtering work together in combination.
+// Uses a copy of the list to avoid mutating the original array (good practice).
 function sortRecipes(list) {
   const sTime = getSelectedSortTime();
   const sPop = getSelectedSortPop();
+  const arr = [...list]; // copy first
 
-  // Copy array so we don't mutate the original (good practice)
-  const arr = [...list];
-
-  // ARRAY sort() with a comparator FUNCTION.
   arr.sort((a, b) => {
-    // PRIMARY: popularity if chosen
+    // Primary: popularity (if selected)
     if (sPop === 'most' && a.popularity !== b.popularity) return b.popularity - a.popularity;
     if (sPop === 'least' && a.popularity !== b.popularity) return a.popularity - b.popularity;
 
-    // SECONDARY (or primary if no pop sort): time
+    // Secondary (or primary if no popularity sort): time
     if (sTime === 'asc') return a.timeMin - b.timeMin;
     if (sTime === 'desc') return b.timeMin - a.timeMin;
 
-    return 0; // 0 means "leave order as-is"
+    return 0; // 0 leaves order as-is
   });
 
   return arr;
 }
 
-// Compose the two steps: FILTER then SORT
+// Compose the two steps: FILTER first, then SORT
 function getVisibleRecipes() {
   return sortRecipes(filterRecipes(RECIPES));
 }
 
+
 /* ===========================================================
-   7) RENDER
-   Purpose: Turn the (filtered + sorted) ARRAY into real DOM cards.
-   This is where we loop and fill the <template>.
-   Also shows Date(), string templates and status updates.
+   9) RENDER
+   PURPOSE: Turn the (filtered + sorted) array into real DOM cards.
+   We clone a <template> per recipe and fill its fields.
+   We also update a live status line for accessibility/debugging.
+
+- G-REQ: RENDERING — dynamically generates recipe cards based on filtered data.
+- VG-STRETCH: Includes loading state, ARIA live updates, and performance-friendly rendering via templates.
    =========================================================== */
-
-let RECIPES = [];      // GLOBAL array, filled by cache or API
-
-function renderGrid(sourceLabel = 'cache/api') {
-  // Clear grid before re-render (prevents duplicates)
+function renderGrid(sourceLabel = 'filters') {
+  // Clear the grid before re-rendering (prevents duplicates)
   grid.innerHTML = '';
+  const items = getVisibleRecipes();  // Compute the list of items to show after filters/sorts
 
-  const items = getVisibleRecipes();  //Compute visible items (after filters/sorts
-
-  // CONDITION: Empty state for no result
+  // G-REQ: Empty state if nothing matches the current filters show a meaningful message to the user instead of blank UI.
   if (items.length === 0) {
     grid.innerHTML = '<div class="empty">No recipes match your filters.</div>';
     updateStatus(0, sourceLabel);
     return; // stop here
   }
 
-  // Grab the template from HTML once and clone for each recipe
+  // Grab the <template> once, then clone it for each recipe
   const tpl = $('cardTpl');
 
-  // ARRAY forEach = LOOP over each recipe OBJECT and build a card
   items.forEach(r => {
-    // Clone the <template> content
+    // Clone the template content (deep clone = true)
     const node = tpl.content.cloneNode(true);
 
-    // Fill dynamic fields (DOM manipulation)
+    // Fill img + title
     node.querySelector('.card__img').src = r.imageUrl;
     node.querySelector('.card__img').alt = r.title;
     node.querySelector('.card__title').textContent = r.title;
 
-    // Use pretty labels for meta fields
-    node.querySelector('.meta-cuisine').textContent = prettyLabel(r.cuisine);
-    node.querySelector('.meta-diet').textContent = prettyLabel(r.diet);
+    // Fill meta info (cuisine, diet, popularity, time)
+    node.querySelector('.meta-cuisine').textContent = toTitleCase(r.cuisine);
+    node.querySelector('.meta-diet').textContent = toTitleCase(r.diet);
     node.querySelector('.meta-pop').textContent = starsFromPopularity(r.popularity);
     node.querySelector('.meta-time').textContent = minutesToLabel(r.timeMin);
 
-    // Build the ingredient list (ARRAY → multiple <li>)
+    // Build the ingredient list (<ul> with ≤ MAX_INGREDIENTS + optional ellipsis)
     const ul = node.querySelector('.ing-list');
-    // If the list is longer than MAX_INGREDIENTS, slice + add ellipsis
     const list = r.ingredients.length > MAX_INGREDIENTS
-      ? [...r.ingredients.slice(0, MAX_INGREDIENTS), '…']  // SPREAD creates a new ARRAY
+      ? [...r.ingredients.slice(0, MAX_INGREDIENTS), '…']  // spread to create a new array
       : r.ingredients;
-    //  ARRAY.forEach: create <li> per ingredient
+
     list.forEach(i => {
-      const li = document.createElement('li');
-      li.textContent = i;
-      ul.appendChild(li);
+      const li = document.createElement('li'); // create <li>
+      li.textContent = i;                      // set text
+      ul.appendChild(li);                      // add to list
     });
 
-    // Now append the filled card to the grid
-    // Update screen-reader/live status line
+    // Finally, append the card to the grid
     grid.appendChild(node);
   });
+
+  // Update the status line (screen-readers + helpful for users)
   updateStatus(items.length, sourceLabel);
 }
 
-// Show a one-line summary of what is displayed (uses Date())
+// Simplified user-friendly status messages (no debug info)
 function updateStatus(count, source) {
-  // Pick labels (or dash if empty) using LOGICAL OR
-  const c = getSelectedCuisine() ? prettyLabel(getSelectedCuisine()) : 'all';
-  const d = getSelectedDiet() ? prettyLabel(getSelectedDiet()) : 'all';
-  const st = getSelectedSortTime() || '—';
-  const sp = getSelectedSortPop() || '—';
+  // Don’t overwrite “Loading…” or error messages
+  if (!count) return;
 
-  // Date() object to show a “time of update”
-  const when = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-  // Template string assembling everything
-  $('status').textContent =
-    `Showing ${count} recipe(s). Cuisine: ${c}. Diet: ${d}. Sort(time): ${st}. Sort(pop): ${sp}. Source: ${source}. ${when}`;
+  const q = getQuery();
+  if (q) {
+    $('status').textContent = `Found ${count} recipe(s) matching "${q}".`;
+  } else {
+    $('status').textContent = `Showing ${count} recipe(s).`;
+  }
 }
 
+
+
 /* ===========================================================
-   EVENTS + INIT
-   Purpose: Wire up the dropdowns, then kick off the first render.
+   10) EVENTS + INIT (+ Random)
+   PURPOSE: Wire up the dropdowns (on change → re-render), and then kick off the first fetch.
+   We also keep the visual "is-selected" pill style in sync with whether a value is chosen.
    =========================================================== */
-
-// Combine event listeners and visual state setup for dropdowns
-['cuisine', 'diet', 'sortTime', 'sortPop'].forEach(id => {
+['cuisine', 'diet', 'sortTime', 'sortPop', 'q'].forEach(id => {
+  // Grab the <select> element by id
   const sel = $(id);
-  if (!sel) return;
+  if (!sel) return; // safety guard
 
-  //  Re-render on change with a clear source label "filters
-  sel.addEventListener('change', () => renderGrid('cache/api'));
+  // Re-render the grid when any dropdown changes (source label = "filters" so status is clear)
+  const rerender = () => renderGrid('filters');
+  sel.addEventListener('change', rerender);
+  sel.addEventListener('input', rerender);
 
-  //  Keep visual "is-selected" class in sync with value presence
-  //  Listen to multiple events to keep state accurat
+  // Keep the visual "is-selected" class in sync (blue/white vs mint/pink)
   const sync = () => sel.classList.toggle('is-selected', !!sel.value);
   sel.addEventListener('change', sync);
   sel.addEventListener('blur', sync);
   sel.addEventListener('input', sync);
-  sync();  //  Initialize correct visual state on page loa
+  sync(); // set correct state on page load
 });
 
-// Entry point: fetch (from cache or API), then render
-// DEMONSTRATES: calling an async FUNCTION (fetchRecipes), which itself
-// uses PROMISES under the hood (await fetch, await res.json).
+// G-REQ: Random recipe button
+$('btnRandom')?.addEventListener('click', (e) => {
+  e.preventDefault();
+  showRandomRecipe();
+});
+
+function showRandomRecipe() {
+  if (!RECIPES || !RECIPES.length) {
+    $('status').textContent = 'No recipes loaded yet — try fetching first.';
+    return;
+  }
+  const idx = Math.floor(Math.random() * RECIPES.length);
+  const pick = RECIPES[idx];
+
+  grid.setAttribute('aria-busy', 'true');
+  grid.innerHTML = '';
+  const tpl = $('cardTpl');
+  const node = tpl.content.cloneNode(true);
+
+  node.querySelector('.card__img').src = pick.imageUrl;
+  node.querySelector('.card__img').alt = pick.title;
+  node.querySelector('.card__title').textContent = pick.title;
+
+  node.querySelector('.meta-cuisine').textContent = toTitleCase(pick.cuisine);
+  node.querySelector('.meta-diet').textContent = toTitleCase(pick.diet);
+  node.querySelector('.meta-pop').textContent = starsFromPopularity(pick.popularity);
+  node.querySelector('.meta-time').textContent = minutesToLabel(pick.timeMin);
+
+  const ul = node.querySelector('.ing-list');
+  const list = pick.ingredients.length > MAX_INGREDIENTS
+    ? [...pick.ingredients.slice(0, MAX_INGREDIENTS), '…']
+    : pick.ingredients;
+
+  list.forEach(i => {
+    const li = document.createElement('li');
+    li.textContent = i;
+    ul.appendChild(li);
+  });
+
+  grid.appendChild(node);
+  updateStatus(1, 'random');
+  grid.removeAttribute('aria-busy'); // VG-STRETCH: Removes aria-busy after rendering is complete (accessibility enhancement)
+
+
+}
+
+// ENTRY POINT – Start by fetching recipes (cache → API → stale fallback) then rendering.
 fetchRecipes(12);
