@@ -77,46 +77,53 @@ function toTitleCase(str = '') {
 - VG-STRETCH: Simplifies filtering and sorting logic downstream.
 
 */
-function normalizeRecipe(r) {
+function normalizeRecipe(recipe) {
+  if (!recipe) throw new Error("Recipe input is null or undefined");
   // DEBUG: See what title we’re normalizing (helps if some recipe breaks).
-  console.log('[normalizeRecipe] input:', r?.title);
+  console.log("[normalizeRecipe] input:", recipe.title);
 
   // Read first cuisine safely (optional chaining) or default to 'unknown'.
   // Then convert to kebab-case so filters are simple and consistent.
-  const cuisineCode = toKebabCase(r?.cuisines?.[0] || 'unknown');
+  const cuisineCode = toKebabCase(recipe.cuisines?.[0] || "unknown");
+  const dietCode = resolveDietCode(recipe);
+  const rawPop = resolvePopularity(recipe);
 
-  // Choose exactly one diet label based on priority (vegan > vegetarian > gluten-free > dairy-free > none).
-  // This makes sorting/filtering simpler (single diet per recipe).
-  let dietCode = 'none';
-  if (r?.vegan || r?.diets?.includes?.('vegan')) dietCode = 'vegan';
-  else if (r?.vegetarian || r?.diets?.includes?.('vegetarian')) dietCode = 'vegetarian';
-  else if (r?.glutenFree || r?.diets?.includes?.('gluten free')) dietCode = 'gluten-free';
-  else if (r?.dairyFree || r?.diets?.includes?.('dairy free')) dietCode = 'dairy-free';
+  return mapToNormalizedRecipe(recipe, cuisineCode, dietCode, rawPop);
+}
 
-  // Popularity: prefer spoonacularScore (0–100). Else fallback to aggregateLikes (capped 0–100).
-  // typeof guard is used because some APIs may set undefined/null or a string by mistake.
-  const rawPop = typeof r?.spoonacularScore === 'number'
-    ? r.spoonacularScore
-    : Math.min(100, r?.aggregateLikes || 0);
+// Choose exactly one diet label based on priority (vegan > vegetarian > gluten-free > dairy-free > none).
+// This makes sorting/filtering simpler (single diet per recipe).
+function resolveDietCode(recipe) {
+  if (recipe.vegan || recipe.diets?.includes?.("vegan")) return "vegan";
+  if (recipe.vegetarian || recipe.diets?.includes?.("vegetarian")) return "vegetarian";
+  if (recipe.glutenFree || recipe.diets?.includes?.("gluten free")) return "gluten-free";
+  if (recipe.dairyFree || recipe.diets?.includes?.("dairy free")) return "dairy-free";
+  return "none";
+}
 
-  // Return the normalized object. This is the shape our UI code relies on.
+// Popularity: prefer spoonacularScore (0–100). Else fallback to aggregateLikes (capped 0–100).
+// typeof guard is used because some APIs may set undefined/null or a string by mistake.
+function resolvePopularity(recipe) {
+  if (typeof recipe.spoonacularScore === "number") {
+    return recipe.spoonacularScore;
+  }
+  return Math.min(100, recipe.aggregateLikes || 0);
+}
+
+// Return the normalized object. This is the shape our UI code relies on.
+function mapToNormalizedRecipe(recipe, cuisineCode, dietCode, rawPop) {
   return {
-    id: r?.id,
-    title: r?.title || 'Untitled recipe',
-    cuisine: cuisineCode,                     // e.g., 'italian', 'middle-eastern'
-    diet: dietCode,                           // 'vegan', 'vegetarian', 'gluten-free', 'dairy-free', 'none'
-    timeMin: r?.readyInMinutes || 0,          // number (0 if missing)
-    popularity: rawPop,                        // number (0–100)
-    imageUrl: r?.image
-      || 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=1200&auto=format&fit=crop',
-
-    // Build a simple array of ingredient names:
-    // 1) (r.extendedIngredients || [])  → safe fallback to empty array
-    // 2) .map(i => i?.name)              → pick only the name field (undefined-safe)
-    // 3) .filter(Boolean)                → remove empty/undefined names to avoid blank bullets
-    // 4) .slice(0, 12)                   → cap to 12 names max (safety)
-    ingredients: (r?.extendedIngredients || [])
-      .map(i => i?.name)
+    id: recipe.id,
+    title: recipe.title || "Untitled recipe",
+    cuisine: cuisineCode,
+    diet: dietCode,
+    timeMin: recipe.readyInMinutes || 0,
+    popularity: rawPop,
+    imageUrl:
+      recipe.image ||
+      "https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=1200&auto=format&fit=crop",
+    ingredients: (recipe.extendedIngredients || [])
+      .map((i) => i?.name)
       .filter(Boolean)
       .slice(0, 12),
   };
@@ -341,7 +348,7 @@ function renderGrid(sourceLabel = 'filters') {
   if (items.length === 0) {
     grid.innerHTML = '<div class="empty">No recipes match your filters.</div>';
     updateStatus(0, sourceLabel);
-    return; // stop here
+    return; // early exit
   }
 
   // Grab the <template> once, then clone it for each recipe
@@ -384,15 +391,15 @@ function renderGrid(sourceLabel = 'filters') {
 
 // Simplified user-friendly status messages (no debug info)
 function updateStatus(count, source) {
-  // Don’t overwrite “Loading…” or error messages
-  if (!count) return;
+  if (count === 0) {
+    $('status').textContent = ''; // hide status when grid is empty
+    return;
+  }
 
   const q = getQuery();
-  if (q) {
-    $('status').textContent = `Found ${count} recipe(s) matching "${q}".`;
-  } else {
-    $('status').textContent = `Showing ${count} recipe(s).`;
-  }
+  $('status').textContent = q
+    ? `Found ${count} recipe(s) matching "${q}".`
+    : `Showing ${count} recipe(s).`;
 }
 
 
