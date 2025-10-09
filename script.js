@@ -290,8 +290,13 @@ function filterRecipes(list) {
   const diet = getSelectedDiet();
   const q = getQuery();
 
+
+  // Empty filter ("") = user didn't pick a value → don't restrict by that criterion.
+  // Ternary pattern: condition ? checkMatch : true  → if empty, return true so all items pass.
+  // Example: diet ? r.diet === diet : true   // no diet selected → every recipe passes the diet test.
+  // Optional chaining helps avoid crashes on missing fields: r.cuisines?.includes(cuisine)
+
   const out = list.filter(r => {
-    // If a filter is empty "", we accept everything (true).
     const passCuisine = cuisine
       ? (r.cuisine === cuisine || r.cuisines?.includes(cuisine))
       : true;
@@ -351,7 +356,7 @@ function renderGrid(sourceLabel = 'filters') {
 
   // G-REQ: Empty state if nothing matches the current filters show a meaningful message to the user instead of blank UI.
   if (items.length === 0) {
-    grid.innerHTML = '<div class="empty">No recipes match your filters.</div>';
+    grid.innerHTML = '<div class="empty">No recipes match your filters, please try another option.</div>';
     updateStatus(0, sourceLabel);
     return; // early exit
   }
@@ -385,6 +390,8 @@ function renderGrid(sourceLabel = 'filters') {
       ul.appendChild(li);                      // add to list
     });
 
+
+
     // Finally, append the card to the grid
     grid.appendChild(node);
   });
@@ -405,8 +412,6 @@ function updateStatus(count, source) {
     ? `Found ${count} recipe(s) matching "${q}".`
     : `Showing ${count} recipe(s).`;
 }
-
-
 
 /* ===========================================================
    10) EVENTS + INIT (+ Random)
@@ -473,8 +478,6 @@ function showRandomRecipe() {
   grid.appendChild(node);
   updateStatus(1, 'random');
   grid.removeAttribute('aria-busy'); // VG-STRETCH: Removes aria-busy after rendering is complete (accessibility enhancement)
-
-
 }
 
 // ENTRY POINT – Start by fetching recipes (cache → API → stale fallback) then rendering.
