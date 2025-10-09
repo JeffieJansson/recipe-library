@@ -18,14 +18,11 @@
 /* -----------------------
    1) API CONFIG
    ----------------------- */
-// CONST (STRING) – API key for Spoonacular. OK to expose for demos/school, NOT for production.
-// In production, you would keep keys on a server and call your server instead of calling the API directly.
 // FUNCTION (arrow) + TEMPLATE LITERAL – Builds the full URL to fetch N random recipes.
-// We use a default parameter (n = 12) so the function works even if we don’t pass a value.
+// We use a default parameter (n = 24) so the function works even if we don’t pass a value.
 const API_KEY = '42a3e506a5a6493080872a8509f9c7d5';
-const API_URL = (n = 12) =>
-  `https://api.spoonacular.com/recipes/random?number=${n}&apiKey=${API_KEY}`;
-
+const API_URL = (n = 24) =>
+  `https://api.spoonacular.com/recipes/complexSearch?apiKey=${API_KEY}&number=${n}&cuisine=Italian,American,Chinese,Asian,Mediterranean,Middle%20Eastern&addRecipeInformation=true&instructionsRequired=true&fillIngredients=true&sort=random`;
 
 /* -----------------------
    2) CACHE + UI CONSTANTS
@@ -38,6 +35,7 @@ const API_URL = (n = 12) =>
 const CACHE_KEY = 'spoon_recipes_cache_v1';
 const CACHE_TTL_MS = 1000 * 60 * 60 * 6; // 6 hours
 const MAX_INGREDIENTS = 4;
+// global in-memory array of all recipes (fetched + normalized)
 let RECIPES = [];
 
 
@@ -65,70 +63,6 @@ function toTitleCase(str = '') {
   return String(str).replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 }
 
-
-/* -----------------------
-   5) NORMALIZATION HELPERS
-   -----------------------
-   PURPOSE: The API returns big, messy objects with many fields and inconsistent shapes.
-   We normalize each raw recipe into a clean object with consistent keys that our UI expects.
-   This decouples the UI from the raw API shape and makes rendering simpler/reliable.
-
-- G-REQ: Data normalization — converts messy API objects into consistent structures that our UI can rely on.
-- VG-STRETCH: Simplifies filtering and sorting logic downstream.
-
-*/
-function normalizeRecipe(recipe) {
-  if (!recipe) throw new Error("Recipe input is null or undefined");
-  // DEBUG: See what title we’re normalizing (helps if some recipe breaks).
-  console.log("[normalizeRecipe] input:", recipe.title);
-
-  // Read first cuisine safely (optional chaining) or default to 'unknown'.
-  // Then convert to kebab-case so filters are simple and consistent.
-  const cuisineCode = toKebabCase(recipe.cuisines?.[0] || "unknown");
-  const dietCode = resolveDietCode(recipe);
-  const rawPop = resolvePopularity(recipe);
-
-  return mapToNormalizedRecipe(recipe, cuisineCode, dietCode, rawPop);
-}
-
-// Choose exactly one diet label based on priority (vegan > vegetarian > gluten-free > dairy-free > none).
-// This makes sorting/filtering simpler (single diet per recipe).
-function resolveDietCode(recipe) {
-  if (recipe.vegan || recipe.diets?.includes?.("vegan")) return "vegan";
-  if (recipe.vegetarian || recipe.diets?.includes?.("vegetarian")) return "vegetarian";
-  if (recipe.glutenFree || recipe.diets?.includes?.("gluten free")) return "gluten-free";
-  if (recipe.dairyFree || recipe.diets?.includes?.("dairy free")) return "dairy-free";
-  return "none";
-}
-
-// Popularity: prefer spoonacularScore (0–100). Else fallback to aggregateLikes (capped 0–100).
-// typeof guard is used because some APIs may set undefined/null or a string by mistake.
-function resolvePopularity(recipe) {
-  if (typeof recipe.spoonacularScore === "number") {
-    return recipe.spoonacularScore;
-  }
-  return Math.min(100, recipe.aggregateLikes || 0);
-}
-
-// Return the normalized object. This is the shape our UI code relies on.
-function mapToNormalizedRecipe(recipe, cuisineCode, dietCode, rawPop) {
-  return {
-    id: recipe.id,
-    title: recipe.title || "Untitled recipe",
-    cuisine: cuisineCode,
-    diet: dietCode,
-    timeMin: recipe.readyInMinutes || 0,
-    popularity: rawPop,
-    imageUrl:
-      recipe.image ||
-      "https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=1200&auto=format&fit=crop",
-    ingredients: (recipe.extendedIngredients || [])
-      .map((i) => i?.name)
-      .filter(Boolean)
-      .slice(0, 12),
-  };
-}
-
 // PURE FORMATTERS – Small helpers to transform numbers/codes to user-friendly labels.
 function minutesToLabel(mins) {
   // Return a time label based on numeric ranges
@@ -141,6 +75,74 @@ function starsFromPopularity(p) {
   // Convert 0–100 popularity to a 0–5 stars string
   const n = Math.max(0, Math.min(5, Math.round(p / 20)));
   return "★".repeat(n) + "☆".repeat(5 - n);
+}
+
+/* -----------------------
+   5) NORMALIZATION HELPERS
+   -----------------------
+PURPOSE:
+   The API returns big, messy objects with many fields and inconsistent shapes.
+   I use normalizeRecipe() to clean and reformat that data into a consistent structure
+   that our UI can easily use.
+      - Split the logic into smaller helper functions for better readability:
+     • resolveDietCode() – decides which diet label (vegan, vegetarian, etc.)
+     • resolvePopularity() – converts popularity score safely (0–100)
+     • mapToNormalizedRecipe() – returns the final clean recipe object
+
+- G-REQ: Data normalization — converts messy API objects into consistent structures that our UI can rely on.
+- VG-STRETCH: Simplifies filtering and sorting logic downstream.
+
+*/
+function normalizeRecipe(recipe) {
+  if (!recipe) throw new Error("Recipe input is null or undefined");
+  // console.log("[normalizeRecipe] input:", recipe.title); 
+  //console.log("[normalizeRecipe] input:", recipe.title);
+
+  // Read first cuisine safely (optional chaining) or default to 'unknown'.
+  // Then convert to kebab-case so filters are simple and consistent.
+  const cuisineCode = toKebabCase(recipe.cuisines?.[0] || "unknown");
+  const dietCode = resolveDietCode(recipe);
+  const rawPop = resolvePopularity(recipe);
+
+  return mapToNormalizedRecipe(recipe, cuisineCode, dietCode, rawPop);
+}
+
+// resolveDietCode() → decides which single diet label to use.
+// Order of priority: vegan > vegetarian > gluten-free > dairy-free > none.
+function resolveDietCode(recipe) {
+  if (recipe.vegan || recipe.diets?.includes?.("vegan")) return "vegan";
+  if (recipe.vegetarian || recipe.diets?.includes?.("vegetarian")) return "vegetarian";
+  if (recipe.glutenFree || recipe.diets?.includes?.("gluten free")) return "gluten-free";
+  if (recipe.dairyFree || recipe.diets?.includes?.("dairy free")) return "dairy-free";
+  return "none";
+}
+
+// resolvePopularity() → takes spoonacularScore (0–100) or falls back to aggregateLikes.
+function resolvePopularity(recipe) {
+  if (typeof recipe.spoonacularScore === "number") {
+    return recipe.spoonacularScore;
+  }
+  return Math.min(100, recipe.aggregateLikes || 0);
+}
+
+// mapToNormalizedRecipe() → builds the final simplified recipe object
+function mapToNormalizedRecipe(recipe, cuisineCode, dietCode, rawPop) {
+  return {
+    id: recipe.id,
+    title: recipe.title || "Untitled recipe",
+    cuisine: cuisineCode,
+    cuisines: (recipe.cuisines || []).map(toKebabCase),
+    diet: dietCode,
+    timeMin: recipe.readyInMinutes || 0,
+    popularity: rawPop,
+    imageUrl:
+      recipe.image ||
+      "https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=1200&auto=format&fit=crop",
+    ingredients: (recipe.extendedIngredients || [])
+      .map((i) => i?.name)
+      .filter(Boolean)
+      .slice(0, 24),
+  };
 }
 
 
@@ -187,7 +189,7 @@ function saveCache(recipes) {
 - VG-STRETCH: Uses cached or stale data when quota/network fails.
 
    =========================================================== */
-async function fetchRecipes(count = 12) {
+async function fetchRecipes(count = 24) {
   grid.innerHTML = '<div class="loading">Loading recipes…</div>';
   $('status').textContent = 'Loading recipes…';
   grid.setAttribute('aria-busy', 'true');
@@ -215,7 +217,8 @@ async function fetchRecipes(count = 12) {
     }
 
     const data = await res.json();
-    const normalized = (data.recipes || []).map(normalizeRecipe);
+    const normalized = (data.results || data.recipes || []).map(normalizeRecipe);
+
     if (normalized.length === 0) throw new Error('Empty result');
 
     RECIPES = normalized;
@@ -289,7 +292,9 @@ function filterRecipes(list) {
 
   const out = list.filter(r => {
     // If a filter is empty "", we accept everything (true).
-    const passCuisine = cuisine ? r.cuisine === cuisine : true;
+    const passCuisine = cuisine
+      ? (r.cuisine === cuisine || r.cuisines?.includes(cuisine))
+      : true;
     const passDiet = diet ? r.diet === diet : true;
     const passQuery = q
       ? (r.title.toLowerCase().includes(q) ||
@@ -353,7 +358,6 @@ function renderGrid(sourceLabel = 'filters') {
 
   // Grab the <template> once, then clone it for each recipe
   const tpl = $('cardTpl');
-
   items.forEach(r => {
     // Clone the template content (deep clone = true)
     const node = tpl.content.cloneNode(true);
@@ -389,7 +393,7 @@ function renderGrid(sourceLabel = 'filters') {
   updateStatus(items.length, sourceLabel);
 }
 
-// Simplified user-friendly status messages (no debug info)
+// Simplified user-friendly status messages, clears the text completely when there are no matching recipes (count === 0).
 function updateStatus(count, source) {
   if (count === 0) {
     $('status').textContent = ''; // hide status when grid is empty
@@ -412,7 +416,7 @@ function updateStatus(count, source) {
 ['cuisine', 'diet', 'sortTime', 'sortPop', 'q'].forEach(id => {
   // Grab the <select> element by id
   const sel = $(id);
-  if (!sel) return; // safety guard
+  if (!sel) return; // safety guard 
 
   // Re-render the grid when any dropdown changes (source label = "filters" so status is clear)
   const rerender = () => renderGrid('filters');
@@ -474,4 +478,4 @@ function showRandomRecipe() {
 }
 
 // ENTRY POINT – Start by fetching recipes (cache → API → stale fallback) then rendering.
-fetchRecipes(12);
+fetchRecipes(24);

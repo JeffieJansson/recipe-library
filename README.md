@@ -1,157 +1,241 @@
+# Recipe Library (Vanilla JS)
 
-# Netlify URL: library-recipe.netlify.app
-
-# 📋 Project Brief & Requirements
-
-## Grade G (Pass) Requirements
-**Requirements:**
-- Your page should fetch real recipe data from Spoonacular's `recipes/random` endpoint
-- When the page is loaded, you should dynamically display recipe cards based on the API data
-- Users should be able to select at least one filter, and at least one sorting option
-- When a filter or sorting option is picked, you should update the DOM with these recipes
-- Your code should be split up into different functions that are named after what they do
-- The user should be able to click a button that selects a random recipe, and your page should display the selected item
-- Your page should have an empty state, e.g. if there are no recipes matching the filter - show a meaningful message to the user
-- Your page should show a useful message to the user in case the daily API quota has been reached(only 150 requests per day)
-- Your page should be responsive and look good on devices from 320px width up to at least 1600px
-- Deal with missing or inconsistent data (e.g., how dietary properties are structured).
-
-**Course Participation Requirements**
-- Active participation in mob/pair programming workshops
-- Regular attendance at weekly demos and retrospectives
-- Completion of (at least) one peer code review
-
-## Grade VG (Pass with Distinction) Requirements
-All Grade G requirements **plus** the implementation of a **minimum of 4 stretch goals**:
-
-### Stretch Goal Options
-For VG, implement 1–3 and pick the 4th: **A, B, C or D**.
-
-1. Make your filters and sorting options work together so that the user, for example, can filter on vegetarian & popular recipes or Italian vegan recipes  
-2. Implement local storage caching to reduce API requests  
-3. Show a loading state while fetching data  
-4. Pick one of these:
-   - **A.** Implement a feature so that the user will be able to see the instructions/steps, for example when clicking a button.  
-   - **B.** Allow users to search for specific recipe names or ingredients  
-   - **C.** Allow users to save/like recipes and store them in local storage. This includes adding a heart button to the recipe card and adding a "View favourites" button that only shows favourite recipes.  
-   - **D.** Implement pagination for large results or infinite scrolling (e.g. fetching more recipes when the user has reached the bottom)
+A small, clean recipe browser built with **HTML/CSS/JavaScript** that fetches data from the Spoonacular API.  
+It focuses on **clarity**, **good structure**, and **student‑friendly code**: each step is split into small functions and clearly commented.
 
 ---
 
-# 🍳 Recipe Library — Spoonacular API Project
+## ✨ Features
 
-This project is part of the **Frontend JavaScript course** and demonstrates how to build a dynamic recipe library that fetches real data from the [Spoonacular API](https://spoonacular.com/food-api).  
-It includes API integration, local storage caching, filtering, sorting, search, and responsive design.
+- Fetches recipes from Spoonacular `/recipes/complexSearch` with:
+  - `addRecipeInformation=true` (get images, ingredients, etc.)
+  - `instructionsRequired=true` (avoid empty/how-to)
+  - `fillIngredients=true` (include ingredient list)
+  - `sort=random` (or `popularity` if you prefer more complete metadata)
+- **Local cache** with TTL (6 hours) via `localStorage` → faster reloads, fewer API calls.
+- **Normalization layer**: turns messy API objects into a small, predictable shape for the UI.
+- **Filters & sorting** (cuisine, diet, time, popularity) + free‑text **search** (title/ingredients).
+- **Accessible rendering**: live status messages + `aria-busy` while grid updates.
+- **Quota/Offline fallback**: shows cached data or a friendly message when API is unavailable.
+- **Random recipe** button (renders exactly one card from the current dataset).
 
-## 🧠 Project Overview
-The goal of the project is to replace static mock data with **real recipe data** fetched from the Spoonacular API and render it dynamically on the page.  
-Users can filter and sort recipes, search by name or ingredients, and display a random recipe.  
+---
 
-The project fulfills all **G** (Pass) requirements and several **VG** (Pass with Distinction) stretch goals.
+## 🧱 Tech Stack
 
+- **HTML** (semantic structure + `<template>` for cards)
+- **CSS** (responsive grid, clean tokens/variables)
+- **JavaScript** (no frameworks)
 
+---
 
-## ⚙️ How It Works
+## 📁 Project Structure
 
-### 1) API & Data Fetching
-The app uses the **Spoonacular API** to fetch real recipes:
+```
+.
+├── index.html      # Layout, filter controls, grid, <template> for cards
+├── style.css       # Tokens, responsive grid, card styling, UI polish
+└── script.js       # All logic (fetch/cache/normalize/filter/sort/render/events)
+```
+
+Open `index.html` directly in a browser or via a lightweight web server (e.g. VS Code “Live Server”).
+
+> Tip: If you double‑click `index.html`, most browsers will run it fine. If you ever hit CORS issues, use a local server.
+
+---
+
+## ⚙️ Setup
+
+1) **Get an API key** from Spoonacular (free/student).  
+2) In `script.js`, set:
 ```js
-const API_KEY = 'YOUR_API_KEY';
-const API_URL = (n = 12) => 
-  `https://api.spoonacular.com/recipes/random?number=${n}&apiKey=${API_KEY}`;
+const API_KEY = "YOUR_API_KEY_HERE";
 ```
-Recipes are fetched asynchronously using `fetch()` and `async/await`.  
-If the quota is reached or offline, cached data is used as a fallback.
-
-### 2) Caching
-Fetched recipes are stored in `localStorage` for 6 hours to avoid exceeding the API limit:
+3) Optional: change how many recipes to load on startup:
 ```js
-localStorage.setItem("spoon_recipes_cache_v1", JSON.stringify({ ts: Date.now(), data: recipes }));
-```
-When the app loads, it first checks if valid cache data exists before making a new API request.
-
-### 3) Normalization
-The incoming API data is **normalized** into a smaller, predictable object that the UI can safely render.  
-This reduces bugs and makes filtering/sorting simpler.
-
-### 4) Filtering & Sorting
-Users can filter by **cuisine**, **diet**, apply a **search query**, and sort by **popularity** or **time**.  
-Filtering and sorting functions are combined so that multiple options can be active together.
-
-### 5) Rendering
-Recipes are displayed dynamically by cloning a hidden `<template>` in the HTML and filling in data such as:
-- Image
-- Title
-- Cuisine & diet
-- Cooking time
-- Ingredients
-
-An **empty state** appears if no recipes match the selected filters.
-
-### 6) Accessibility
-- `aria-live="polite"` is used to update status messages.
-- `aria-busy="true"` is used while recipes are loading.
-
-## 🧩 File Structure
-```
-📁 project-folder
-│
-├── README.md       # Project documentation (this file)
-├── index.html      # Structure of the page (filters, grid, template)
-├── script.js       # JavaScript logic: API, cache, filtering, rendering
-└── style.css       # All styling (responsive grid, dropdowns, cards)
+fetchRecipes(24); // try 12, 24, 36 ...
 ```
 
-
-
-## 👩‍💻 Author
-**Jennifer Jansson**  
-Frontend Developer Student  
-Project completed as part of the **JavaScript Frontend course**.
-
----
-
-© 2025 – Recipe Library Project
-
-
-## 🎓 How This Project Meets the G & VG Requirements
-
-Below is a detailed mapping of how each requirement has been implemented in the code.
-
----
-
-### 🟩 Grade G (Pass) Requirements
-
-| Requirement | How it’s implemented | Code reference |
-|--------------|---------------------|----------------|
-| **Fetch real recipe data** | The app uses the Spoonacular `recipes/random` endpoint to retrieve live recipe data. | `fetchRecipes()` → `API_URL()` |
-| **Display recipe cards dynamically** | Recipes are rendered dynamically by cloning a `<template>` and inserting API data. | `renderGrid()` |
-| **Filters and sorting options** | Dropdowns for cuisine, diet, popularity, and time trigger a re-render of the filtered and sorted results. | `filterRecipes()`, `sortRecipes()`, `getVisibleRecipes()` |
-| **Filter/sort updates DOM** | Event listeners call `renderGrid('filters')` whenever a dropdown value changes. | Event section in `script.js` |
-| **Functions split logically and clearly named** | The code is divided into reusable functions (e.g., `normalizeRecipe`, `fetchRecipes`, `saveCache`, `renderGrid`). | Throughout `script.js` |
-| **Random recipe button** | Selects a random recipe and renders it alone in the grid. | `showRandomRecipe()` |
-| **Empty state message** | If no recipes match filters, a friendly message appears instead of blank space. | `renderGrid()` |
-| **Daily quota message** | Detects status codes `402` and `429` and informs the user if the API quota is reached. | Inside `fetchRecipes()` |
-| **Responsive design (320px–1600px)** | Uses CSS Grid with `auto-fill`, `minmax()`, and media queries for flexible layouts. | `style.css` |
-| **Code readability** | Consistent structure, comments, and clear naming conventions are used throughout. | Entire project |
+### Configure cuisines
+This project fetches certain cuisines from the API. You’ll see either:
+- a string‑built URL (simple):
+```js
+const API_URL = (n = 24) =>
+  `https://api.spoonacular.com/recipes/complexSearch?apiKey=${API_KEY}&number=${n}&cuisine=Italian,American,Chinese,Asian,Mediterranean,Middle%20Eastern&addRecipeInformation=true&instructionsRequired=true&fillIngredients=true&sort=random`;
+```
+or (alternative style) a URL builder with an editable list:
+```js
+const BASE = "https://api.spoonacular.com";
+const WANTED_CUISINES = ["Italian","American","Chinese","Asian","Mediterranean","Middle Eastern"];
+const API_URL = (n = 24) => {
+  const url = new URL("/recipes/complexSearch", BASE);
+  url.searchParams.set("apiKey", API_KEY);
+  url.searchParams.set("number", String(n));
+  url.searchParams.set("cuisine", WANTED_CUISINES.join(","));
+  url.searchParams.set("addRecipeInformation", "true");
+  url.searchParams.set("instructionsRequired", "true");
+  url.searchParams.set("fillIngredients", "true");
+  url.searchParams.set("sort", "random"); // or "popularity"
+  return url.toString();
+};
+```
+Use whichever version your codebase has—both produce a correct API URL.
 
 ---
 
-### 💎 Grade VG (Pass with Distinction) Requirements
+## 🧠 How It Works (10 parts)
 
-| VG Stretch Goal | Description | Code reference |
-|------------------|-------------|----------------|
-| **1. Combined filters & sorting** | Users can filter (e.g., vegan + Italian) while sorting by time or popularity simultaneously. | `getVisibleRecipes()` combines `filterRecipes()` + `sortRecipes()` |
-| **2. Local storage caching** | Recipes are stored with a timestamp to reduce API requests and reuse cached data. | `loadCache()` and `saveCache()` |
-| **3. Loading state while fetching** | Shows a “Loading recipes…” message and sets `aria-busy="true"` while waiting for data. | `fetchRecipes()` |
-| **4. Search feature** | The user can search recipes by name or ingredient keywords. | `getQuery()` and its use inside `filterRecipes()` |
-| **Accessibility improvements** | Uses `aria-live` and `aria-busy` to improve screen reader experience. | `fetchRecipes()`, `updateStatus()` |
-| **Optional stretch** | The project could easily be extended with instructions, favourites, or infinite scrolling. | Planned features in README |
+> The code is intentionally organized into small, named functions with clear headers.
+
+### 1) API config
+Builds the full request URL using your API key, number of recipes, desired cuisines, and safe parameters.
+
+### 2) Cache & UI constants
+Defines constants like `CACHE_KEY`, `CACHE_TTL_MS` (6 hours), `MAX_INGREDIENTS`, and a global `RECIPES` array (the app’s in‑memory “working data”).
+
+### 3) DOM helpers
+A tiny `$()` helper for `getElementById`. Stores a reference to `#grid` where cards are rendered.
+
+### 4) String helpers
+- `toKebabCase("Middle Eastern") → "middle-eastern"` (stable for filters)
+- `toTitleCase("middle-eastern") → "Middle Eastern"` (nice labels)
+
+### 5) Normalization
+`normalizeRecipe(raw)` converts raw API items into a compact shape the UI can trust:
+```js
+{
+  id, title, cuisine, cuisines[], diet, timeMin, popularity, imageUrl, ingredients[]
+}
+```
+Diet is reduced to **one** tag (`vegan/vegetarian/gluten-free/dairy-free/none`). Popularity is normalized to 0–100.
+
+### 6) Cache functions
+- `saveCache(recipes)` → writes `{ ts, data }` to `localStorage`.
+- `loadCache()` → returns cached data only if it’s fresh (<= TTL).
+
+### 7) Fetch with quota handling
+- Show “Loading…” and mark grid `aria-busy`.
+- Try fresh cache first; otherwise call the API.
+- Normalize, save to cache, render.  
+- On error/402/429, fall back to in‑memory data, then stale cache, or show a friendly empty state.
+
+> (Optional but recommended) You can filter out items with missing cuisines before normalization:
+```js
+const normalized = (data.results || data.recipes || [])
+  .filter(r => Array.isArray(r.cuisines) && r.cuisines.length > 0)
+  .map(normalizeRecipe);
+```
+
+### 8) Filtering & sorting
+Applies the current UI selections:
+- Filter by **cuisine**, **diet**, and **search** (title + ingredients).
+- Sort by **popularity** and/or **time**.
+
+### 9) Rendering
+Clones a hidden `<template>` for each recipe, fills in fields (image, title, meta, ingredients), and updates an ARIA live status. Renders an empty state if no results.
+
+### 10) Events & init
+Wires dropdowns + search to re-render on change. “Random” button shows a single random card. On page load, calls `fetchRecipes(...)` to populate the grid.
 
 ---
 
-✅ **Summary:**
-- **All G requirements** are fully implemented and verified in code.  
-- **At least four VG stretch goals** are clearly achieved (1–4).  
-- Code is modular, readable, and includes user-friendly error handling and accessibility enhancements.  
+## 🔁 Full Data Flow (with arrows)
 
+```
+[PAGE LOAD]
+   │
+   ▼
+(10) events/init → fetchRecipes(n)
+   │
+   ▼
+(7) fetchRecipes
+  ├─ show "Loading…" + aria-busy
+  ├─ try (6) loadCache()
+  │    ├─ YES → RECIPES = cache → (9) renderGrid("cache") → DONE
+  │    └─ NO  → fetch API using (1) API_URL
+  │          ├─ parse JSON
+  │          ├─ (optional) filter out empty cuisines
+  │          ├─ (5) normalize each item
+  │          ├─ RECIPES = normalized
+  │          ├─ (6) saveCache(RECIPES)
+  │          └─ (9) renderGrid("api") → DONE
+  └─ on error/quota:
+       ├─ if in-memory RECIPES → renderGrid("stale")
+       ├─ else stale localStorage → renderGrid("stale")
+       └─ else empty state message
+   │
+   ▼
+(8) filter/sort/search → (9) renderGrid("filters")
+   │
+   ▼
+Random button → 1 card from RECIPES
+```
+
+---
+
+## 🧩 Normalized Recipe Shape (UI object)
+
+```ts
+type Recipe = {
+  id: number;
+  title: string;
+  cuisine: string;        // e.g. "italian" (kebab-case)
+  cuisines: string[];     // all cuisines (kebab-case)
+  diet: "vegan" | "vegetarian" | "gluten-free" | "dairy-free" | "none";
+  timeMin: number;        // readyInMinutes (default 0)
+  popularity: number;     // 0..100
+  imageUrl: string;
+  ingredients: string[];  // short, clean list
+};
+```
+
+---
+
+## 🛟 Error Handling & Quota
+
+- **402 / 429** → “Daily API quota reached” message.  
+- Falls back to in‑memory or stale cache when possible.  
+- Always fails **gracefully** with helpful messages instead of crashing.
+
+---
+
+## ♿ Accessibility
+
+- `aria-busy` while rendering the grid
+- Live status region (`role="status"`) that announces what’s shown
+- Clear empty/error states
+
+---
+
+## 🚀 Performance Notes
+
+- Local caching avoids unnecessary network calls.  
+- Using `<template>` nodes + fragment cloning keeps rendering snappy.  
+- Filtering/sorting is done on small, normalized arrays in memory.
+
+---
+
+## 🔒 Security Note (Important)
+
+The API key is included **client‑side** for school/demos only. In production you should **not** expose secrets in the browser. Use a small server/proxy to keep your key private.
+
+---
+
+## ✅ Code‑Review Checklist (for your classmate)
+
+- Clear section headers and small, named functions?
+- Normalization returns the same shape for every recipe?
+- Filters/sorts are pure (they don’t mutate the original array)?
+- Empty + loading states are handled?
+- Cache TTL, API URL, and constants easy to change?
+- Comments explain the “why”, not only the “what”?
+
+---
+
+## 📄 License
+
+No license included by default. For school use, that’s fine. If you publish publicly, consider **MIT**.
+
+---
+
+Happy cooking & coding! 🍝
