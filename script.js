@@ -154,7 +154,6 @@ function loadCache() {
     const obj = JSON.parse(raw);                         // parse string → object
     if (!obj || !obj.ts || !Array.isArray(obj.data)) return null;
     if (Date.now() - obj.ts > CACHE_TTL_MS) return null; // expired
-    console.log('[cache] Loaded fresh cache:', obj.data.length);
     return obj.data;
   } catch {
     // If JSON is corrupted or storage blocked, fail safely.
@@ -166,10 +165,8 @@ function loadCache() {
 function saveCache(recipes) {
   try {
     localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data: recipes }));
-    console.log('[cache] Saved recipes:', recipes.length);
   } catch {
     // If storage is full/blocked, fail safely (but warn in console).
-    console.warn('[cache] Save failed (quota or blocked).');
   }
 }
 
@@ -215,7 +212,6 @@ async function fetchRecipes(count = 24) {
     saveCache(RECIPES);
     renderGrid('api');
   } catch (err) {
-    console.warn('[fetchRecipes] failed:', err);
     const isQuota = err && err.message === 'QUOTA';
 
     // 3a) In-memory stale
