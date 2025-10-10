@@ -341,6 +341,7 @@ function renderGrid(sourceLabel = 'filters') {
   if (items.length === 0) {
     grid.innerHTML = '<div class="empty">No recipes match your filters, please try another option.</div>';
     updateStatus(0, sourceLabel);
+    grid.removeAttribute('aria-busy'); //Removes aria-busy after rendering is complete (accessibility enhancement)
     return; // early exit
   }
 
@@ -381,6 +382,7 @@ function renderGrid(sourceLabel = 'filters') {
 
   // Update the status line (screen-readers + helpful for users)
   updateStatus(items.length, sourceLabel);
+  grid.removeAttribute('aria-busy');
 }
 
 // Simplified user-friendly status messages, clears the text completely when there are no matching recipes (count === 0).
