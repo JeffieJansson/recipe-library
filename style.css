@@ -1,13 +1,5 @@
-/* ===============================================================
-   G-REQ: RESPONSIVE DESIGN
-   The layout adapts to any screen width (320px–1600px+) using
-   CSS Grid, flexible minmax() columns, and media queries below.
-   =============================================================== */
-
-
 :root {
   /* ---------- CSS custom properties (variables) ---------- */
-  /* Use these like tokens so you can tweak the design in one place. */
   --bg: #f6f9ff;
   --ink: #0f172a;
   --muted: #475569;
@@ -35,7 +27,6 @@
 }
 
 /* Box sizing: include padding and border in width/height calculations */
-
 * {
   box-sizing: border-box;
 }
@@ -46,6 +37,7 @@ body {
   height: 100%;
 }
 
+/* Base styles */
 body {
   margin: 0;
   font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
@@ -75,9 +67,10 @@ body {
 }
 
 /* ================= FILTERS LAYOUT =================
-   G-REQ: Responsive grid layout for filter panel
+   Responsive grid layout for filter panel
    Adjusts from single column (mobile) to four columns (desktop). */
-/* MOBILE: 1 kolumn (behåll) */
+
+/* MOBILE: 1 column*/
 .filter-container {
   display: grid;
   gap: 24px;
@@ -86,21 +79,21 @@ body {
   justify-content: center;
 }
 
-/* TABLET: 2 kolumner */
+/* TABLET: 2 columns */
 @media (min-width: 600px) {
   .filter-container {
     grid-template-columns: repeat(2, minmax(220px, 1fr));
   }
 }
 
-/* DESKTOP: 4 kolumner (behåll din regel) */
+/* DESKTOP: 4 columns */
 @media (min-width: 1000px) {
   .filter-container {
     grid-template-columns: repeat(4, minmax(220px, 1fr));
   }
 }
 
-
+/* Make the panel background transparent to show the page bg */
 .panel {
   background: transparent;
 }
@@ -148,6 +141,7 @@ body {
     linear-gradient(135deg, var(--blue) 50%, transparent 50%);
 }
 
+/* Hover state */
 .select--green:hover,
 .select--green:focus-visible {
   background-color: var(--mint);
@@ -155,6 +149,7 @@ body {
   border: 2px solid var(--blue);
 }
 
+/* Selected state (not empty) */
 .select--green.is-selected {
   background-color: var(--blue);
   color: #fff;
@@ -175,6 +170,7 @@ body {
     linear-gradient(135deg, var(--blue) 50%, transparent 50%);
 }
 
+/* Hover state */
 .select--pink:hover,
 .select--pink:focus-visible {
   background-color: var(--pink-light);
@@ -182,6 +178,7 @@ body {
   border: 2px solid var(--blue);
 }
 
+/* Selected state (not empty) */
 .select--pink.is-selected {
   background-color: var(--pink-dark);
   color: #fff;
@@ -199,7 +196,7 @@ body {
 }
 
 /* ================= CARDS GRID =================
-   G-REQ: Responsive card grid using auto-fill & minmax
+   Responsive card grid using auto-fill & minmax
    Cards rearrange automatically based on viewport width. */
 .grid {
   display: grid;
@@ -224,6 +221,7 @@ body {
   /* don't force a minimum height */
 }
 
+/* Hover effect */
 .card:hover {
   box-shadow: 0 20px 30px rgba(2, 6, 23, .12);
   border: 2px solid rgba(0, 24, 164, 1)
@@ -258,6 +256,7 @@ body {
   font-size: var(--card-meta);
 }
 
+/* Make the values (dividers) slightly lighter color */
 .card__meta span {
   color: #475569;
   font-weight: 600;
@@ -271,15 +270,15 @@ body {
   font-size: var(--card-meta);
 }
 
+/* Ingredient list (<ul>) */
 .card__ing ul {
   margin: 6px 0 0 18px;
-  /* indent bullets a bit */
   padding: 0;
 }
 
-/* /* G-REQ: EMPTY + LOADING STATES
-   Visually styled messages displayed when fetching data or
-   when no recipes match filters. */
+/*EMPTY + LOADING STATES
+  Visually styled messages displayed when fetching data or
+  when no recipes match filters. */
 .empty,
 .loading {
   grid-column: 1 / -1;
@@ -294,6 +293,7 @@ body {
   border-style: solid;
 }
 
+/* Styled button for "Random recipe" */
 .btn {
   display: inline-block;
   padding: 10px 16px;
@@ -308,6 +308,7 @@ body {
   transition: background .15s, color .15s, transform .05s;
 }
 
+/* Hover, focus, and active states */
 .btn:hover,
 .btn:focus-visible {
   background: var(--blue);
@@ -319,7 +320,7 @@ body {
 }
 
 /* ================= RESPONSIVE TWEAKS ================= */
-/* VG-STRETCH: Additional responsiveness for ultra-wide screens (desktop+) */
+/*Additional responsiveness for ultra-wide screens (desktop+) */
 
 @media (min-width:1280px) {
   :root {
@@ -327,7 +328,7 @@ body {
   }
 }
 
-/* G-REQ: Responsive typography and smaller card sizes for mobile (≤520px) */
+/*Responsive typography and smaller card sizes for mobile (≤520px) */
 @media (max-width:520px) {
   :root {
     --card-min: 180px;

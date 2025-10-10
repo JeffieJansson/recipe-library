@@ -1,5 +1,6 @@
-# Recipe Library (Vanilla JS)
+Netlify link : https://library-recipe.netlify.app/
 
+# Recipe Library
 A small, clean recipe browser built with **HTML/CSS/JavaScript** that fetches data from the Spoonacular API.  
 It focuses on **clarity**, **good structure**, and **student‑friendly code**: each step is split into small functions and clearly commented.
 

@@ -1,5 +1,5 @@
 /* ===========================================================
-// ===============================================================
+//  Recipe Finder App
 //  Code is split up into small, named functions that describe what they do. 
 // Each section is clearly marked with a header.
 // -1 API config & fetch
@@ -88,15 +88,9 @@ PURPOSE:
      • resolveDietCode() – decides which diet label (vegan, vegetarian, etc.)
      • resolvePopularity() – converts popularity score safely (0–100)
      • mapToNormalizedRecipe() – returns the final clean recipe object
-
-- G-REQ: Data normalization — converts messy API objects into consistent structures that our UI can rely on.
-- VG-STRETCH: Simplifies filtering and sorting logic downstream.
-
 */
 function normalizeRecipe(recipe) {
   if (!recipe) throw new Error("Recipe input is null or undefined");
-  // console.log("[normalizeRecipe] input:", recipe.title); 
-  //console.log("[normalizeRecipe] input:", recipe.title);
 
   // Read first cuisine safely (optional chaining) or default to 'unknown'.
   // Then convert to kebab-case so filters are simple and consistent.
@@ -184,10 +178,6 @@ function saveCache(recipes) {
    7) FETCH (API + fallback) with QUOTA messaging
    PURPOSE: Show loading → try cache → try network → normalize/save/render → handle errors.
    Includes a stale-cache fallback to keep UI useful when offline/quota.
-
-- G-REQ: QUOTA HANDLING — detect when daily API limit (402/429) is reached and show a useful message to the user instead of breaking silently.
-- VG-STRETCH: Uses cached or stale data when quota/network fails.
-
    =========================================================== */
 async function fetchRecipes(count = 24) {
   grid.innerHTML = '<div class="loading">Loading recipes…</div>';
@@ -215,7 +205,7 @@ async function fetchRecipes(count = 24) {
       }
       throw new Error(`HTTP ${res.status}`);
     }
-
+    // Parse JSON + normalize
     const data = await res.json();
     const normalized = (data.results || data.recipes || []).map(normalizeRecipe);
 
@@ -230,7 +220,7 @@ async function fetchRecipes(count = 24) {
 
     // 3a) In-memory stale
     if (RECIPES && RECIPES.length) {
-      // G-REQ: fallback message for quota or offline situations
+      // fallback message for quota or offline situations
       $('status').textContent = isQuota
         ? 'Daily API quota reached — showing previously loaded recipes.'
         : 'Network error — showing previously loaded recipes.';
@@ -282,8 +272,8 @@ function getSelectedSortTime() { return $('sortTime').value || ""; } // "asc" | 
 function getSelectedSortPop() { return $('sortPop').value || ""; }   // "most" | "least" | ""
 function getQuery() { return ($('q')?.value || '').trim().toLowerCase(); }
 
-// G-REQ: FILTERING — applies current dropdown selections (cuisine, diet)
-// VG-STRETCH: Also supports free-text search in title and ingredients.
+// FILTERING — applies current dropdown selections (cuisine, diet)
+// Also supports free-text search in title and ingredients query.
 
 function filterRecipes(list) {
   const cuisine = getSelectedCuisine();
@@ -311,9 +301,9 @@ function filterRecipes(list) {
   return out;
 }
 
-// G-REQ: SORTING — sorts recipes by time or popularity based on dropdowns
-// VG-STRETCH: Sorting and filtering work together in combination.
-// Uses a copy of the list to avoid mutating the original array (good practice).
+// SORTING — sorts recipes by time or popularity based on dropdowns
+// Sorting and filtering work together in combination.
+// Uses a copy of the list to avoid mutating the original array.
 function sortRecipes(list) {
   const sTime = getSelectedSortTime();
   const sPop = getSelectedSortPop();
@@ -345,9 +335,6 @@ function getVisibleRecipes() {
    PURPOSE: Turn the (filtered + sorted) array into real DOM cards.
    We clone a <template> per recipe and fill its fields.
    We also update a live status line for accessibility/debugging.
-
-- G-REQ: RENDERING — dynamically generates recipe cards based on filtered data.
-- VG-STRETCH: Includes loading state, ARIA live updates, and performance-friendly rendering via templates.
    =========================================================== */
 function renderGrid(sourceLabel = 'filters') {
   // Clear the grid before re-rendering (prevents duplicates)
@@ -436,7 +423,7 @@ function updateStatus(count, source) {
   sync(); // set correct state on page load
 });
 
-// G-REQ: Random recipe button
+//Random recipe button
 $('btnRandom')?.addEventListener('click', (e) => {
   e.preventDefault();
   showRandomRecipe();
@@ -477,7 +464,7 @@ function showRandomRecipe() {
 
   grid.appendChild(node);
   updateStatus(1, 'random');
-  grid.removeAttribute('aria-busy'); // VG-STRETCH: Removes aria-busy after rendering is complete (accessibility enhancement)
+  grid.removeAttribute('aria-busy'); //Removes aria-busy after rendering is complete (accessibility enhancement)
 }
 
 // ENTRY POINT – Start by fetching recipes (cache → API → stale fallback) then rendering.
