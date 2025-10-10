@@ -14,7 +14,8 @@
 // -10 Event handling & init  random recipe
    =========================================================== */
 
-
+//Import backup data
+import { backupData } from './backupData.js';
 /* -----------------------
    1) API CONFIG
    ----------------------- */
