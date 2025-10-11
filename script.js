@@ -19,8 +19,6 @@ import { backupData } from './backupData.js';
 /* -----------------------
    1) API CONFIG
    ----------------------- */
-// FUNCTION (arrow) + TEMPLATE LITERAL – Builds the full URL to fetch N random recipes.
-// We use a default parameter (n = 24) so the function works even if we don’t pass a value.
 const API_KEY = '42a3e506a5a6493080872a8509f9c7d5';
 const API_URL = (n = 24) =>
   `https://api.spoonacular.com/recipes/complexSearch?apiKey=${API_KEY}&number=${n}&cuisine=Italian,American,Chinese,Asian,Mediterranean,Middle%20Eastern&addRecipeInformation=true&instructionsRequired=true&fillIngredients=true&sort=random`;

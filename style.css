@@ -4,40 +4,33 @@
   --ink: #0f172a;
   --muted: #475569;
   --stroke: #E9E9E9;
-  --shadow: 0 10px 20px rgba(2, 6, 23, .07);
-  --blue-dark: #0019A8;
+  --white: #ffffff;
+  --blue: #0018A4;
+  --heading: #1e3a8a;
+  --pink: #FFECEA;
   --pink-dark: #FF5C8A;
-  --mint: rgba(204, 255, 226, 1);
-  --blue: rgba(0, 24, 164, 1);
-  --pink-light: #FFECEA;
+  --mint: #CCFFE2;
 
-  /* Compact card sizing knobs */
+  /* Controls & cards */
+  --control-w: 240px;
   --card-min: 220px;
-  /* min column width inside the responsive grid */
   --card-gap: 16px;
-  /* gap between cards */
   --card-pad: 12px;
-  /* inner padding on a card */
   --card-radius: 12px;
-  /* card border radius */
   --card-title: 16px;
-  /* title font size */
   --card-meta: 14px;
-  /* meta/ingredients font size */
 }
 
-/* Box sizing: include padding and border in width/height calculations */
+/* ---------- Base ---------- */
 * {
   box-sizing: border-box;
 }
 
-/* Make full-height pages possible */
 html,
 body {
   height: 100%;
 }
 
-/* Base styles */
 body {
   margin: 0;
   font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
@@ -45,189 +38,174 @@ body {
   color: var(--muted);
 }
 
-/* Centers content and limits max width on large screens */
+/* ---------- Container ---------- */
 .container {
   max-width: 1100px;
   margin: 0 auto;
   padding: 28px;
 }
 
-/* Big, bold title. We also scale it down on small screens. */
+/* ---------- Header ---------- */
 .page-header h1 {
   margin: 0 0 16px;
   font-size: 56px;
-  color: #1e3a8a;
+  color: var(--heading);
   font-weight: 800;
 }
 
 @media (max-width:520px) {
   .page-header h1 {
-    font-size: 40px
+    font-size: 40px;
   }
 }
 
-/* ================= FILTERS LAYOUT =================
-   Responsive grid layout for filter panel
-   Adjusts from single column (mobile) to four columns (desktop). */
-
-/* MOBILE: 1 column*/
+/* ================= FILTERS LAYOUT ================= */
 .filter-container {
-  display: grid;
-  gap: 24px;
-  grid-template-columns: minmax(0, 360px);
-  /* 1 kolumn på mobil */
-  justify-content: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: flex-start;
+  justify-content: flex-start;
 }
 
-/* TABLET: 2 columns */
-@media (min-width: 600px) {
-  .filter-container {
-    grid-template-columns: repeat(2, minmax(220px, 1fr));
-  }
-}
-
-/* DESKTOP: 4 columns */
-@media (min-width: 1000px) {
-  .filter-container {
-    grid-template-columns: repeat(4, minmax(220px, 1fr));
-  }
-}
-
-/* Make the panel background transparent to show the page bg */
 .panel {
+  width: var(--control-w);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
   background: transparent;
 }
 
-/* Labels for dropdowns */
 .field-label {
-  display: block;
-  margin: 0 0 8px;
+  margin: 0;
   color: var(--ink);
   font-size: 18px;
   font-weight: 700;
 }
 
-/* ================= PRETTY DROPDOWNS =================
-   Same class used for all <select> inputs. */
-.select {
+/* ================= CONTROLS ================= */
+.select,
+.btn {
   width: 100%;
-  padding: 10px 14px;
-  border-radius: 50px;
-  border: 1px solid transparent;
-  font-weight: 700;
+  border-radius: 999px;
   font-size: 16px;
   line-height: 24px;
-  box-shadow: 0 10px 20px rgba(2, 6, 23, .07);
-  outline: none;
-  cursor: pointer;
-  transition: border-color .15s, background .15s, color .15s;
+  font-weight: 700;
+}
 
-  /* Remove native arrow + draw a custom chevron using gradients */
+/* Base look shared by input & select */
+.select {
+  padding: 10px 14px;
+  border: 2px solid transparent;
+  background: var(--white);
+  color: var(--blue);
+}
+
+/* Arrow ONLY for real <select> (not the search input) */
+select.select {
   appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  padding-right: 44px;
+  /* space for arrow */
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--blue) 50%),
+    linear-gradient(135deg, var(--blue) 50%, transparent 50%);
   background-repeat: no-repeat;
   background-size: 8px 8px, 8px 8px;
-  background-position:
-    calc(100% - 24px) calc(1em + 2px),
-    calc(100% - 16px) calc(1em + 2px);
+  background-position: right 24px center, right 14px center;
 }
 
-/* ---------- GREEN SET (cuisine + diet) ---------- */
+/* Variants */
 .select--green {
   background-color: var(--mint);
-  color: var(--blue);
-  /* blue arrow in default */
-  background-image:
-    linear-gradient(45deg, transparent 50%, var(--blue) 50%),
-    linear-gradient(135deg, var(--blue) 50%, transparent 50%);
 }
 
-/* Hover state */
-.select--green:hover,
-.select--green:focus-visible {
-  background-color: var(--mint);
-  color: var(--blue);
-  border: 2px solid var(--blue);
-}
-
-/* Selected state (not empty) */
-.select--green.is-selected {
-  background-color: var(--blue);
-  color: #fff;
-  border: none;
-  /* white arrow when selected */
-  background-image:
-    linear-gradient(45deg, transparent 50%, #fff 50%),
-    linear-gradient(135deg, #fff 50%, transparent 50%);
-}
-
-/* ---------- PINK SET (sorters) ---------- */
 .select--pink {
-  background-color: var(--pink-light);
-  color: var(--blue);
-  /* blue arrow in default */
+  background-color: var(--pink);
+}
+
+/* Hover/focus */
+.select:hover,
+.select:focus-visible {
+  border-color: var(--blue);
+}
+
+/* Selected state (via JS .is-selected or CSS :has) */
+select.select.select--green.is-selected,
+select.select.select--green:has(option:checked:not([value=""])) {
+  background-color: var(--blue);
+  color: var(--white);
   background-image:
-    linear-gradient(45deg, transparent 50%, var(--blue) 50%),
-    linear-gradient(135deg, var(--blue) 50%, transparent 50%);
+    linear-gradient(45deg, transparent 50%, var(--white) 50%),
+    linear-gradient(135deg, var(--white) 50%, transparent 50%);
 }
 
-/* Hover state */
-.select--pink:hover,
-.select--pink:focus-visible {
-  background-color: var(--pink-light);
-  color: var(--blue);
-  border: 2px solid var(--blue);
-}
-
-/* Selected state (not empty) */
-.select--pink.is-selected {
+select.select.select--pink.is-selected,
+select.select.select--pink:has(option:checked:not([value=""])) {
   background-color: var(--pink-dark);
-  color: #fff;
-  border: none;
+  color: var(--white);
   background-image:
-    linear-gradient(45deg, transparent 50%, #fff 50%),
-    linear-gradient(135deg, #fff 50%, transparent 50%);
+    linear-gradient(45deg, transparent 50%, var(--white) 50%),
+    linear-gradient(135deg, var(--white) 50%, transparent 50%);
 }
 
-/* Live region where we print status (selected filters, counts, errors) */
+/* Search input */
+input.select[type="search"] {
+  cursor: text;
+}
+
+/* Button random recipe */
+.btn {
+  padding: 10px 16px;
+  border: 2px solid var(--blue);
+  background: var(--white);
+  color: var(--blue);
+  cursor: pointer;
+}
+
+.btn:hover,
+.btn:focus-visible {
+  background: var(--blue);
+  color: var(--white);
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
+
+/* Live status text */
 .status {
-  margin-top: 12px;
+  margin-top: 8px;
   font-weight: 700;
-  color: #1e3a8a;
+  color: var(--heading);
 }
 
-/* ================= CARDS GRID =================
-   Responsive card grid using auto-fill & minmax
-   Cards rearrange automatically based on viewport width. */
+/* ================= CARDS GRID ================= */
 .grid {
   display: grid;
   gap: var(--card-gap);
   margin-top: 24px;
   grid-template-columns: repeat(auto-fill, minmax(var(--card-min), 1fr));
   align-items: start;
-  /* align tops of different-height cards */
 }
 
-/* ================= CARD =================
-   A compact white card with shadow. */
+/* ================= CARD ================= */
 .card {
-  width: 100%;
-  background: #fff;
-  border: 1px solid var(--stroke);
+  background: var(--white);
+  border: 2px solid transparent;
+  /* fixed width to avoid hover reflow */
   border-radius: var(--card-radius);
   padding: var(--card-pad) var(--card-pad) calc(var(--card-pad)*1.5);
-  box-shadow: var(--shadow);
-  transition: box-shadow .2s;
-  min-height: auto;
-  /* don't force a minimum height */
+  box-shadow: 0 10px 20px rgba(2, 6, 23, .07);
+  transition: box-shadow .2s, border-color .2s;
 }
 
-/* Hover effect */
 .card:hover {
   box-shadow: 0 20px 30px rgba(2, 6, 23, .12);
-  border: 2px solid rgba(0, 24, 164, 1)
+  border-color: var(--blue);
 }
 
-/* Image with 16:9 ratio to keep cards shorter (compact look) */
 .card__img {
   width: 100%;
   height: auto;
@@ -235,34 +213,30 @@ body {
   border-radius: calc(var(--card-radius) - 4px);
 }
 
-/* Card title */
 .card__title {
   margin: 8px 0 0;
-  color: #0f172a;
+  color: var(--ink);
   font-size: var(--card-title);
   font-weight: 800;
 }
 
-/* Key/Value meta rows (two-column grid) */
 .card__meta {
   display: grid;
   grid-template-columns: auto 1fr;
   gap: 6px 10px;
   padding-top: 8px;
   border-top: 1px solid var(--stroke);
-  color: #0f172a;
+  color: var(--ink);
   font-weight: 700;
   margin-top: 6px;
   font-size: var(--card-meta);
 }
 
-/* Make the values (dividers) slightly lighter color */
 .card__meta span {
-  color: #475569;
+  color: var(--muted);
   font-weight: 600;
 }
 
-/* Ingredients section */
 .card__ing {
   padding-top: 8px;
   border-top: 1px solid var(--stroke);
@@ -270,70 +244,34 @@ body {
   font-size: var(--card-meta);
 }
 
-/* Ingredient list (<ul>) */
 .card__ing ul {
   margin: 6px 0 0 18px;
   padding: 0;
 }
 
-/*EMPTY + LOADING STATES
-  Visually styled messages displayed when fetching data or
-  when no recipes match filters. */
+/* ================= STATES ================= */
 .empty,
 .loading {
   grid-column: 1 / -1;
   text-align: center;
   padding: 24px;
-  background: #fff;
+  background: var(--white);
   border: 1px dashed var(--stroke);
   border-radius: 12px;
 }
 
-.loading {
-  border-style: solid;
-}
-
-/* Styled button for "Random recipe" */
-.btn {
-  display: inline-block;
-  padding: 10px 16px;
-  border-radius: 999px;
-  border: 2px solid var(--blue);
-  background: #fff;
-  color: var(--blue);
-  font-weight: 800;
-  font-size: 16px;
-  cursor: pointer;
-  box-shadow: var(--shadow);
-  transition: background .15s, color .15s, transform .05s;
-}
-
-/* Hover, focus, and active states */
-.btn:hover,
-.btn:focus-visible {
-  background: var(--blue);
-  color: #fff;
-}
-
-.btn:active {
-  transform: translateY(1px);
-}
-
 /* ================= RESPONSIVE TWEAKS ================= */
-/*Additional responsiveness for ultra-wide screens (desktop+) */
-
 @media (min-width:1280px) {
   :root {
     --card-min: 240px;
   }
 }
 
-/*Responsive typography and smaller card sizes for mobile (≤520px) */
 @media (max-width:520px) {
   :root {
     --card-min: 180px;
-    /* narrower columns on small phones */
     --card-title: 15px;
     --card-meta: 13px;
+    --control-w: 220px;
   }
 }
